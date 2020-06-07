@@ -1,23 +1,32 @@
-#include <imgui.h>
-#include <string>
+/*
+ * Othello game
+ * ver 0.01
+ */
 
 #include "othello.h"
 
-const int diskRadius = 29;
-const int tileSize = 64;
-const int boardTiles = 8;
-const int tileSpacing = 2;
-const int boardSize = boardTiles*tileSize;
-const ImColor buttonColor = ImColor(0.0f, 0.5f, 0.0f);
-const ImColor buttonHoverColor = ImColor(0.0f, 0.7f, 0.0f);
-const ImColor buttonActiveColor = ImColor(0.0f, 0.85f, 0.0f);
-const ImColor boardColor = ImColor(0.0f, 0.25f, 0.0f);
-const ImColor diskColorWhite = ImColor(1.0f, 1.0f, 1.0f);
-const ImColor diskColorBlack = ImColor(0.15f, 0.15f, 0.15f);
+int GameBoard[boardTiles][boardTiles];
+int CurrentDiskColor;
+
+int testPosition(const int x, const int y);
 
 // game initialization
 void OthelloInit()
 {
+    //Disk place mask
+    for(int x = 0; x < boardTiles; ++x) {
+        for(int y = 0; y < boardTiles; ++y) {
+            GameBoard[x][y] = Empty;
+        }
+    }
+    //Start placement
+    GameBoard[3][3] = White;
+    GameBoard[4][4] = White;
+    GameBoard[3][4] = Black;
+    GameBoard[4][3] = Black;
+    CurrentDiskColor = White;
+
+
     // adjusts the spacing between buttons
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing, tileSpacing));
 
@@ -39,9 +48,27 @@ void OthelloFrame(float deltaTime)
 }
 
 // called when a tile was clicked
-void OnTileClicked(int x, int y)
+void OnTileClicked(int y, int x)
 {
-
+    //Game mask update
+    if(GameBoard[x][y] == Empty) {
+        //Only Empty is allowed
+        if(testPosition(x, y) > 0) {
+            GameBoard[x][y] = CurrentDiskColor;
+            if(CurrentDiskColor == White)
+                CurrentDiskColor = Black;
+            else
+                CurrentDiskColor = White;
+        }
+    }
+    //Testing
+    //if(GameBoard[x][y] == White) {
+    //    GameBoard[x][y] = Black;
+    //} else if(GameBoard[x][y] == Black) {
+    //    GameBoard[x][y] = White;
+    //} else {
+    //    //Empty
+    //}
 }
 
 bool OthelloButton(int x, int y)
@@ -60,6 +87,8 @@ bool OthelloButton(int x, int y)
 // this function handles all rendering of the GUI
 void OthelloRender(int width, int height)
 {
+    ImColor diskColor;
+
     // the main imgui window uses all the space available
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2((float)width, (float)height));
@@ -91,10 +120,58 @@ void OthelloRender(int width, int height)
                 const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * j) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * i) + (tileSize * 0.5f));
                 const ImVec2 diskPos = ImVec2(boardStartPosition.x + diskOffset.x, boardStartPosition.y + diskOffset.y);
 
-                ImColor diskColor = diskColorWhite;
-                drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                //Game mask
+                if(GameBoard[i][j] == White) {
+                    diskColor = diskColorWhite;
+                    drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                } else if(GameBoard[i][j] == Black) {
+                    diskColor = diskColorBlack;
+                    drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                } else {
+                    //Empty location
+                }
             }
         }
     }
     ImGui::End();
+}
+
+int testPosition(const int x, const int y)
+{
+    int reply = 0;
+    //Is there disck around current pos
+    if(x > 0) {
+        if(GameBoard[x - 1][y] != Empty)
+            ++reply;
+        if(y > 0) {
+            if(GameBoard[x - 1][y - 1] != Empty)
+                ++reply;
+        }
+        if(y < (boardTiles - 1)) {
+            if(GameBoard[x - 1][y + 1] != Empty)
+                ++reply;
+        }
+    }
+    if(y > 0) {
+        if(GameBoard[x][y - 1] != Empty)
+            ++reply;
+    }
+    if(y < (boardTiles - 1)) {
+        if(GameBoard[x][y + 1] != Empty)
+            ++reply;
+    }
+    if(x < (boardTiles - 1)) {
+        if(GameBoard[x + 1][y] != Empty)
+            ++reply;
+        if(y > 0) {
+            if(GameBoard[x + 1][y - 1] != Empty)
+                ++reply;
+        }
+        if(y < (boardTiles - 1)) {
+            if(GameBoard[x + 1][y + 1] != Empty)
+                ++reply;
+        }
+    }
+    //Return count of disks around point(x,y)
+    return reply;
 }
