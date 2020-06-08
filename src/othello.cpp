@@ -5,13 +5,25 @@
 
 #include "othello.h"
 
-int GameBoard[boardTiles][boardTiles];
-int CurrentDiskColor;
-
-int testPosition(const int x, const int y);
+Game::Game(int diskColor) : 
+            diskRadius(29), 
+            tileSize(64),   
+            boardTiles(8), 
+            tileSpacing(2), 
+            boardSize(boardTiles * tileSize),
+            buttonColor(ImColor(0.0f, 0.5f, 0.0f)), 
+            buttonHoverColor(ImColor(0.0f, 0.7f, 0.0f)),
+            buttonActiveColor(ImColor(0.0f, 0.85f, 0.0f)),
+            boardColor(ImColor(0.0f, 0.25f, 0.0f)),
+            diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
+            diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
+            CurrentDiskColor(diskColor),
+            GameBoard{{0}}
+            {}
+Game::~Game() {}
 
 // game initialization
-void OthelloInit()
+void Game::OthelloInit()
 {
     //Disk place mask
     for(int x = 0; x < boardTiles; ++x) {
@@ -38,17 +50,17 @@ void OthelloInit()
     style.Colors[ImGuiCol_WindowBg] = boardColor;
     style.WindowBorderSize = 0.0f;
     style.WindowRounding = 0.0f;
-    style.WindowPadding = ImVec2(5, 5); // padding within the window
+    style.WindowPadding = ImVec2(5, 5);// padding within the window
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
-void OthelloFrame(float deltaTime)
+void Game::OthelloFrame(float deltaTime)
 {
     
 }
 
 // called when a tile was clicked
-void OnTileClicked(int y, int x)
+void Game::OnTileClicked(int y, int x)
 {
     //Game mask update
     if(GameBoard[x][y] == Empty) {
@@ -71,7 +83,7 @@ void OnTileClicked(int y, int x)
     //}
 }
 
-bool OthelloButton(int x, int y)
+bool Game::OthelloButton(int x, int y)
 {
     // label for the button
     std::string label = "";
@@ -85,7 +97,7 @@ bool OthelloButton(int x, int y)
 }
 
 // this function handles all rendering of the GUI
-void OthelloRender(int width, int height)
+void Game::OthelloRender(int width, int height)
 {
     ImColor diskColor;
 
@@ -136,10 +148,10 @@ void OthelloRender(int width, int height)
     ImGui::End();
 }
 
-int testPosition(const int x, const int y)
+int Game::testPosition(const int x, const int y)
 {
     int reply = 0;
-    //Is there disck around current pos
+    //Is there disc around current pos
     if(x > 0) {
         if(GameBoard[x - 1][y] != Empty)
             ++reply;
@@ -175,3 +187,62 @@ int testPosition(const int x, const int y)
     //Return count of disks around point(x,y)
     return reply;
 }
+
+void Game::InitSdl()
+{
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("Othello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL);
+    if (!window)
+        throw std::runtime_error("Failed to create SDL window");
+
+    gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, gl_context);
+
+    SDL_GL_SetSwapInterval(1);
+}
+
+void Game::InitImgui()
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
+    ImGui_ImplOpenGL2_Init();
+}
+void Game::update()
+{
+    uint64_t ticksLast = SDL_GetPerformanceCounter();
+
+    // prepare new frame
+        ImGui_ImplOpenGL2_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+
+        // game specific logic and rendering goes here
+        int width, height;
+        SDL_GetWindowSize(window, &width, &height);
+
+        uint64_t ticksNow = SDL_GetPerformanceCounter();
+        float deltaTime = (ticksNow - ticksLast)*1000 / (float)SDL_GetPerformanceFrequency();
+        ticksLast = ticksNow;
+
+        OthelloFrame(deltaTime);
+        OthelloRender(width, height);
+        
+        // let imgui handle rest of the rendering process
+        ImGui::Render();
+
+        glViewport(0, 0, width, height);
+        //glClearColor(1, 0, 0, 1);
+        //glClear(GL_COLOR_BUFFER_BIT);
+
+        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+
+        SDL_GL_SwapWindow(window);
+}
+

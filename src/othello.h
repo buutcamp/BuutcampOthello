@@ -3,11 +3,18 @@
  * by BuutcampOthello
  * ver 0.01
  */
+#include <iostream>
 
 #ifndef _OTHELLO_H_
 #define _OTHELLO_H_
 
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#include <SDL_opengl.h>
+
 #include <imgui.h>
+#include <examples/imgui_impl_sdl.h>
+#include <examples/imgui_impl_opengl2.h>
 #include <string>
 
 /*
@@ -16,24 +23,41 @@
 
 enum pcs {Empty, White, Black};
 
-const int diskRadius    = 29;
-const int tileSize      = 64;
-const int boardTiles    = 8;
-const int tileSpacing   = 2;
-const int boardSize     = (boardTiles * tileSize);
+class Game {
+    public: 
+        Game(int disk_color);
+        ~Game();
 
-const ImColor buttonColor       = ImColor(0.0f, 0.5f, 0.0f);
-const ImColor buttonHoverColor  = ImColor(0.0f, 0.7f, 0.0f);
-const ImColor buttonActiveColor = ImColor(0.0f, 0.85f, 0.0f);
-const ImColor boardColor        = ImColor(0.0f, 0.25f, 0.0f);
-const ImColor diskColorWhite    = ImColor(1.0f, 1.0f, 1.0f);
-const ImColor diskColorBlack    = ImColor(0.15f, 0.15f, 0.15f);
+        void OthelloInit();
+        void InitSdl();
+        void InitImgui();
+        void OthelloFrame(float deltaTime);
+        void OthelloRender(int width, int height);
+        void OnTileClicked(int y, int x);
+        void update();
+        
+        bool OthelloButton(int x, int y);
+        int testPosition(const int x, const int y);
+       
+        
+        const int diskRadius;
+        const int tileSize;
+        const int boardTiles;
+        const int tileSpacing;
+        const int boardSize;
 
-/*
- * 
- */
-void OthelloInit();
-void OthelloFrame(float deltaTime);
-void OthelloRender(int width, int height);
+        const ImColor buttonColor;
+        const ImColor buttonHoverColor;
+        const ImColor buttonActiveColor;
+        const ImColor boardColor;
+        const ImColor diskColorWhite;
+        const ImColor diskColorBlack;
+
+    private:
+        int CurrentDiskColor;
+        int GameBoard[8][8]; //int GameBoard[boardTiles][boardTiles];
+        SDL_Window* window;
+        SDL_GLContext gl_context;
+};
 
 #endif      //end othello.h
