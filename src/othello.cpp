@@ -5,6 +5,11 @@
 
 #include "othello.h"
 
+#if (USE_DEBUG == 1)
+std::string txt;
+#endif
+
+
 Game::Game(int diskColor) : 
             diskRadius(29), 
             tileSize(64),   
@@ -19,6 +24,9 @@ Game::Game(int diskColor) :
             diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
             CurrentDiskColor(diskColor),
             GameBoard{{0}}
+            #if (USE_HINT_MASK == 1)
+            ,HintMask{{0}}
+            #endif
             {}
 Game::~Game() {}
 
@@ -29,14 +37,21 @@ void Game::OthelloInit()
     for(int x = 0; x < boardTiles; ++x) {
         for(int y = 0; y < boardTiles; ++y) {
             GameBoard[x][y] = Empty;
+            #if (USE_HINT_MASK == 1)
+            HintMask[x][y] = Empty;
+            #endif
         }
     }
     //Start placement
-    GameBoard[3][3] = White;
-    GameBoard[4][4] = White;
-    GameBoard[3][4] = Black;
-    GameBoard[4][3] = Black;
+    //This way we can make 8*8, 10*10 and 12*12 board as different levels
+    GameBoard[(boardTiles / 2) - 1][(boardTiles / 2) - 1] = White;
+    GameBoard[boardTiles / 2][boardTiles / 2] = White;
+    GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
+    GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
     CurrentDiskColor = White;
+    #if (USE_HINT_MASK == 1)
+    UpdateHintMask();
+    #endif
 
 
     // adjusts the spacing between buttons
@@ -65,12 +80,16 @@ void Game::OnTileClicked(int y, int x)
     //Game mask update
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
-        if(testPosition(x, y) > 0) {
+        if(TestPosition(x, y) > 0) {
             GameBoard[x][y] = CurrentDiskColor;
+            FlipDisks(x, y);
             if(CurrentDiskColor == White)
                 CurrentDiskColor = Black;
             else
                 CurrentDiskColor = White;
+            #if (USE_HINT_MASK == 1)
+            UpdateHintMask();
+            #endif
         }
     }
     //Testing
@@ -148,45 +167,142 @@ void Game::OthelloRender(int width, int height)
     ImGui::End();
 }
 
-int Game::testPosition(const int x, const int y)
+int Game::TestDirection(const int x, const int y, const int dir_x, const int dir_y)
 {
     int reply = 0;
-    //Is there disc around current pos
-    if(x > 0) {
-        if(GameBoard[x - 1][y] != Empty)
+    bool end_point = false;
+    int pos_x, pos_y;
+
+    //We don't test starting point, but next
+    pos_x = x + dir_x;
+    pos_y = y + dir_y;
+
+    #if (USE_DEBUG == 1)
+    txt = "X:" + std::to_string(x) + " Y:" + std::to_string(y) + " delta X = " + std::to_string(dir_x) + " delta Y = " + std::to_string(dir_y);
+    dbMessage(txt, true);
+    #endif
+    //We must stay inside board
+    while ((pos_x >= 0) && (pos_x < boardTiles) && (pos_y >= 0) && (pos_y < boardTiles))
+    {
+        if(GameBoard[pos_x][pos_y] == Empty) {
+            //No disks to flip in this direction
+            reply = 0;
+            break;
+        } else if(GameBoard[pos_x][pos_y] == CurrentDiskColor) {
+            //Found endpoint in this direction
+            end_point = true;
+            break;
+        } else if(GameBoard[pos_x][pos_y] != CurrentDiskColor) {
+            //Possible filippable disk, if there is endpoint
             ++reply;
-        if(y > 0) {
-            if(GameBoard[x - 1][y - 1] != Empty)
-                ++reply;
         }
-        if(y < (boardTiles - 1)) {
-            if(GameBoard[x - 1][y + 1] != Empty)
-                ++reply;
-        }
+        pos_x += dir_x;
+        pos_y += dir_y;
     }
-    if(y > 0) {
-        if(GameBoard[x][y - 1] != Empty)
-            ++reply;
-    }
-    if(y < (boardTiles - 1)) {
-        if(GameBoard[x][y + 1] != Empty)
-            ++reply;
-    }
-    if(x < (boardTiles - 1)) {
-        if(GameBoard[x + 1][y] != Empty)
-            ++reply;
-        if(y > 0) {
-            if(GameBoard[x + 1][y - 1] != Empty)
-                ++reply;
-        }
-        if(y < (boardTiles - 1)) {
-            if(GameBoard[x + 1][y + 1] != Empty)
-                ++reply;
-        }
-    }
-    //Return count of disks around point(x,y)
+    #if (USE_DEBUG == 1)
+    txt = " Delta sigma = " + std::to_string(reply);
+    dbMessage(txt, true);
+    #endif
+
+    //Do we have valid endpoint?
+    if(end_point == true)
+        return reply;
+    else
+        return 0;
+}
+
+int Game::TestPosition(const int x, const int y)
+{
+    int reply;
+
+    reply = TestDirection(x, y, -1, 0);
+    reply += TestDirection(x, y, 1, 0);
+    reply += TestDirection(x, y, 0, -1);
+    reply += TestDirection(x, y, 0, 1);
+    reply += TestDirection(x, y, -1, -1);
+    reply += TestDirection(x, y, 1, 1);
+    reply += TestDirection(x, y, -1, 1);
+    reply += TestDirection(x, y, 1, -1);
+
+    //Return count of possible flippable disks around point(x,y)
     return reply;
 }
+
+void Game::FlipDisks(const int x, const int y)
+{
+    int end_x, end_y;
+
+    end_x = x - TestDirection(x, y, -1, 0);
+    while (end_x != x) {
+        GameBoard[end_x++][y] = CurrentDiskColor;
+    }
+
+    end_x = x + TestDirection(x, y, 1, 0);
+    while (end_x != x) {
+        GameBoard[end_x--][y] = CurrentDiskColor;
+    }
+
+    end_y = y - TestDirection(x, y, 0, -1);
+    while (end_y != y) {
+        GameBoard[x][end_y++] = CurrentDiskColor;
+    }
+
+    end_y = y + TestDirection(x, y, 0, 1);
+    while (end_y != y) {
+        GameBoard[x][end_y--] = CurrentDiskColor;
+    }
+
+    end_x = x - TestDirection(x, y, -1, -1);
+    end_y = y - TestDirection(x, y, -1, -1);
+    while (end_x != x) {
+        GameBoard[end_x++][end_y++] = CurrentDiskColor;
+    }
+
+    end_x = x + TestDirection(x, y, 1, 1);
+    end_y = y + TestDirection(x, y, 1, 1);
+    while (end_y != y) {
+        GameBoard[end_x--][end_y--] = CurrentDiskColor;
+    }
+    end_x = x + TestDirection(x, y, 1, -1);
+    end_y = y - TestDirection(x, y, 1, -1);
+    while (end_x != x) {
+        GameBoard[end_x--][end_y++] = CurrentDiskColor;
+    }
+
+    end_x = x - TestDirection(x, y, -1, 1);
+    end_y = y + TestDirection(x, y, -1, 1);
+    while (end_y != y) {
+        GameBoard[end_x++][end_y--] = CurrentDiskColor;
+    }
+}
+
+#if (USE_HINT_MASK == 1)
+void Game::UpdateHintMask(void)
+{
+    #include <iostream>
+    int x, y;
+    std::cout << std::endl;
+    for(y = (boardTiles - 1); y > 0; --y) {
+        for(x = (boardTiles - 1); x > 0; --x) {
+            if(GameBoard[x][y] == White) {
+                //HintMask[x][y] = White;
+                std::cout << 'W';
+            } else if(GameBoard[x][y] == Black) {
+                //HintMask[x][y] = Black;
+                std::cout << 'B';
+            } else if(TestPosition(x, y) > 0) {
+                HintMask[x][y] = Hint;
+                std::cout << 'X';
+            } else {
+                HintMask[x][y] = Empty;
+                std::cout << 'O';
+            }
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+#endif
 
 void Game::InitSdl()
 {
@@ -246,3 +362,11 @@ void Game::update()
         SDL_GL_SwapWindow(window);
 }
 
+#if (USE_DEBUG == 1)
+void dbMessage(const std::string &s, bool crlf)
+{
+    std::cout << s;
+    if(crlf)
+        std::cout << std::endl;
+}
+#endif
