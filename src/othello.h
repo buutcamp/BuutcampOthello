@@ -17,8 +17,8 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 
-#define USE_HINT_MASK           0       //1 = Used in game, 0 = Not in use
-#define USE_DEBUG               1       //1 = In use, 0 = Not used
+#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
+#define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 /*
  * 
@@ -36,7 +36,7 @@ class Game {
         void InitImgui();
         void OthelloFrame(float deltaTime);
         void OthelloRender(int width, int height);
-        void OnTileClicked(int y, int x);
+        void OnTileClicked(int x, int y);
         void update();
 
         bool OthelloButton(int x, int y);
@@ -59,6 +59,9 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
+        #if (USE_HINT_MASK == 1)
+        const ImColor diskColorHint;
+        #endif
 
     private:
         int CurrentDiskColor;
@@ -74,8 +77,5 @@ class Game {
 #include <iostream>
 void dbMessage(const std::string &s, bool crlf);
 #endif
-//#if (USE_DEBUG == 1)
-//dbMessage(const std::string &s, bool crlf);
-//#endif
 
 #endif      //end othello.h

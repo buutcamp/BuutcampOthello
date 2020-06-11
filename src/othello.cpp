@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.01
+ * ver 0.10
  */
 
 #include "othello.h"
@@ -22,6 +22,9 @@ Game::Game(int diskColor) :
             boardColor(ImColor(0.0f, 0.25f, 0.0f)),
             diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
             diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
+            #if (USE_HINT_MASK == 1)
+            diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
+            #endif
             CurrentDiskColor(diskColor),
             GameBoard{{0}}
             #if (USE_HINT_MASK == 1)
@@ -34,8 +37,8 @@ Game::~Game() {}
 void Game::OthelloInit()
 {
     //Disk place mask
-    for(int x = 0; x < boardTiles; ++x) {
-        for(int y = 0; y < boardTiles; ++y) {
+    for(int y = 0; y < boardTiles; ++y) {
+        for(int x = 0; x < boardTiles; ++x) {
             GameBoard[x][y] = Empty;
             #if (USE_HINT_MASK == 1)
             HintMask[x][y] = Empty;
@@ -75,8 +78,13 @@ void Game::OthelloFrame(float deltaTime)
 }
 
 // called when a tile was clicked
-void Game::OnTileClicked(int y, int x)
+void Game::OnTileClicked(int x, int y)
 {
+    #if (USE_DEBUG == 1)
+    txt = "Button X:" + std::to_string(x) + " Y:" + std::to_string(y);
+    dbMessage(txt, true);
+    #endif
+
     //Game mask update
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
@@ -131,37 +139,73 @@ void Game::OthelloRender(int width, int height)
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
 
         // draw the buttons
-        for (int i=0; i<boardTiles; i++)
+        for (int y = 0; y < boardTiles; ++y)
         {
-            for (int j=0; j<boardTiles; j++)
+            for (int x = 0; x < boardTiles; ++x)
             {
                 ImGui::SameLine(0, (float)tileSpacing);
-                if (OthelloButton(j, i))
-                    OnTileClicked(j, i);
+                if (OthelloButton(x, y))
+                    OnTileClicked(x, y);
             }
 
             ImGui::NewLine();
         }
 
         // draw the pieces over the buttons
-        for (int i=0; i<boardTiles; i++)
+        #if (USE_DEBUG == 1)
+        txt = "Board";
+        dbMessage(txt, true);
+        #endif
+        for (int y = 0; y < boardTiles; ++y)
         {
-            for (int j=0; j<boardTiles; j++)
+            for (int x = 0; x < boardTiles; ++x)
             {
-                const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * j) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * i) + (tileSize * 0.5f));
+                const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * x) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * y) + (tileSize * 0.5f));
                 const ImVec2 diskPos = ImVec2(boardStartPosition.x + diskOffset.x, boardStartPosition.y + diskOffset.y);
 
                 //Game mask
-                if(GameBoard[i][j] == White) {
+                if(GameBoard[x][y] == White) {
                     diskColor = diskColorWhite;
                     drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
-                } else if(GameBoard[i][j] == Black) {
+                    #if (USE_DEBUG == 1)
+                    txt = "W";
+                    dbMessage(txt, false);
+                    #endif
+                } else if(GameBoard[x][y] == Black) {
                     diskColor = diskColorBlack;
                     drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                    #if (USE_DEBUG == 1)
+                    txt = "B";
+                    dbMessage(txt, false);
+                    #endif
                 } else {
-                    //Empty location
+                    //Empty location or hint
+                    #if ((USE_DEBUG == 1) && (USE_HINT_MASK == 0))
+                    txt = "_";
+                    dbMessage(txt, false);
+                    #endif
+                    #if (USE_HINT_MASK == 1)
+                    if(HintMask[x][y] == Hint) {
+                        //Place hint here
+                        diskColor = diskColorHint;
+                        drawList->AddCircleFilled(diskPos, (diskRadius / 2), diskColor, 15);
+                        #if (USE_DEBUG == 1)
+                        txt = "H";
+                        dbMessage(txt, false);
+                        #endif
+                    } else {
+                        #if (USE_DEBUG == 1)
+                        txt = "_";
+                        dbMessage(txt, false);
+                        #endif
+                    }
+                    #endif
                 }
             }
+            #if (USE_DEBUG == 1)
+            txt = " ";
+            dbMessage(txt, true);
+            #endif
         }
     }
     ImGui::End();
@@ -282,8 +326,8 @@ void Game::UpdateHintMask(void)
     #include <iostream>
     int x, y;
     std::cout << std::endl;
-    for(y = (boardTiles - 1); y > 0; --y) {
-        for(x = (boardTiles - 1); x > 0; --x) {
+    for(y = 0; y < boardTiles; ++y) {
+        for(x = 0; x < boardTiles; ++x) {
             if(GameBoard[x][y] == White) {
                 //HintMask[x][y] = White;
                 std::cout << 'W';
@@ -330,6 +374,7 @@ void Game::InitImgui()
     ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
     ImGui_ImplOpenGL2_Init();
 }
+
 void Game::update()
 {
     uint64_t ticksLast = SDL_GetPerformanceCounter();
