@@ -1,4 +1,3 @@
-
 /*#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -16,24 +15,18 @@
 int main(void)
 {
     Game game(White);
+
     game.InitSdl();
     game.InitImgui();
-
     game.OthelloInit();
 
-    uint64_t ticksLast = SDL_GetPerformanceCounter();
-
-    SDL_Event event;
-    while (true)
+    while (game.gameRunning())
     {
-        while (SDL_PollEvent(&event))
-        {
-            // SDL events are passed to imgui
-            ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
-                return 0;
-        }
+        game.handleEvents();
         game.update();
     }
-	return 0;
+
+    //clean up everything
+    //game.clean();
+    return 0;
 }
