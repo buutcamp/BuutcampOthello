@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.10
+ * ver 0.01
  */
 
 #include "othello.h"
@@ -13,7 +13,7 @@ std::string txt;
 Game::Game(int diskColor) : 
             diskRadius(29), 
             tileSize(64),   
-            boardTiles(8), 
+            boardTiles(BOARD_TILES), 
             tileSpacing(2), 
             boardSize(boardTiles * tileSize),
             buttonColor(ImColor(0.0f, 0.5f, 0.0f)), 
@@ -22,23 +22,65 @@ Game::Game(int diskColor) :
             boardColor(ImColor(0.0f, 0.25f, 0.0f)),
             diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
             diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
-            #if (USE_HINT_MASK == 1)
-            diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
-            #endif
             CurrentDiskColor(diskColor),
             GameBoard{{0}}
             #if (USE_HINT_MASK == 1)
-            ,HintMask{{0}}
+            HintMask{{0}}
             #endif
             {}
-Game::~Game() {}
+Game::~Game() {
+    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+// Window intialization
+void Game::InitSdl()
+{
+    if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
+    {
+        window = SDL_CreateWindow("Othello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+        if (!window)
+            throw std::runtime_error("Failed to create SDL window");
+
+        gl_context = SDL_GL_CreateContext(window);
+        SDL_GL_MakeCurrent(window, gl_context);
+
+        SDL_GL_SetSwapInterval(1);
+        isRunning = true;
+    }
+    else
+    {
+        isRunning = false;
+        throw std::runtime_error("Failed to intialize SDL");
+    }
+    
+}
+
+void Game::InitImgui()
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
+    ImGui_ImplOpenGL2_Init();
+}
 
 // game initialization
 void Game::OthelloInit()
 {
     //Disk place mask
-    for(int y = 0; y < boardTiles; ++y) {
-        for(int x = 0; x < boardTiles; ++x) {
+    for(int x = 0; x < boardTiles; ++x) {
+        for(int y = 0; y < boardTiles; ++y) {
             GameBoard[x][y] = Empty;
             #if (USE_HINT_MASK == 1)
             HintMask[x][y] = Empty;
@@ -51,7 +93,7 @@ void Game::OthelloInit()
     GameBoard[boardTiles / 2][boardTiles / 2] = White;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
-    CurrentDiskColor = White;
+    CurrentDiskColor = Black; // Player with Black discs begin game
     #if (USE_HINT_MASK == 1)
     UpdateHintMask();
     #endif
@@ -69,6 +111,7 @@ void Game::OthelloInit()
     style.WindowBorderSize = 0.0f;
     style.WindowRounding = 0.0f;
     style.WindowPadding = ImVec2(5, 5);// padding within the window
+
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
@@ -78,13 +121,8 @@ void Game::OthelloFrame(float deltaTime)
 }
 
 // called when a tile was clicked
-void Game::OnTileClicked(int x, int y)
+void Game::OnTileClicked(int y, int x)
 {
-    #if (USE_DEBUG == 1)
-    txt = "Button X:" + std::to_string(x) + " Y:" + std::to_string(y);
-    dbMessage(txt, true);
-    #endif
-
     //Game mask update
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
@@ -137,75 +175,47 @@ void Game::OthelloRender(int width, int height)
     {
         ImDrawList* drawList = ImGui::GetWindowDrawList(); 
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
-
+        
         // draw the buttons
-        for (int y = 0; y < boardTiles; ++y)
+        for (int i=0; i<boardTiles; i++)
         {
-            for (int x = 0; x < boardTiles; ++x)
+            for (int j=0; j<boardTiles; j++)
             {
                 ImGui::SameLine(0, (float)tileSpacing);
-                if (OthelloButton(x, y))
-                    OnTileClicked(x, y);
+                if (OthelloButton(j, i))
+                    OnTileClicked(j, i);
             }
 
             ImGui::NewLine();
         }
 
         // draw the pieces over the buttons
-        #if (USE_DEBUG == 1)
-        txt = "Board";
-        dbMessage(txt, true);
-        #endif
-        for (int y = 0; y < boardTiles; ++y)
+        for (int i=0; i<boardTiles; i++)
         {
-            for (int x = 0; x < boardTiles; ++x)
+            for (int j=0; j<boardTiles; j++)
             {
-                const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * x) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * y) + (tileSize * 0.5f));
+                const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * j) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * i) + (tileSize * 0.5f));
                 const ImVec2 diskPos = ImVec2(boardStartPosition.x + diskOffset.x, boardStartPosition.y + diskOffset.y);
 
                 //Game mask
-                if(GameBoard[x][y] == White) {
+                if(GameBoard[i][j] == White) {
                     diskColor = diskColorWhite;
                     drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
-                    #if (USE_DEBUG == 1)
-                    txt = "W";
-                    dbMessage(txt, false);
-                    #endif
-                } else if(GameBoard[x][y] == Black) {
+                } else if(GameBoard[i][j] == Black) {
                     diskColor = diskColorBlack;
                     drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
-                    #if (USE_DEBUG == 1)
-                    txt = "B";
-                    dbMessage(txt, false);
-                    #endif
                 } else {
-                    //Empty location or hint
-                    #if ((USE_DEBUG == 1) && (USE_HINT_MASK == 0))
-                    txt = "_";
-                    dbMessage(txt, false);
-                    #endif
-                    #if (USE_HINT_MASK == 1)
-                    if(HintMask[x][y] == Hint) {
-                        //Place hint here
-                        diskColor = diskColorHint;
-                        drawList->AddCircleFilled(diskPos, (diskRadius / 2), diskColor, 15);
-                        #if (USE_DEBUG == 1)
-                        txt = "H";
-                        dbMessage(txt, false);
-                        #endif
-                    } else {
-                        #if (USE_DEBUG == 1)
-                        txt = "_";
-                        dbMessage(txt, false);
-                        #endif
-                    }
-                    #endif
+                    //Empty location
                 }
             }
-            #if (USE_DEBUG == 1)
-            txt = " ";
-            dbMessage(txt, true);
-            #endif
+        }
+        // Draw Reset button
+        ImGui::Spacing();   
+        ImGui::SameLine(boardSize / 2, 0);
+        if(ImGui::Button("Reset"))
+        {
+            // Resetting function calls here
+            std::cout << "I am not finished yet" << "\n";
         }
     }
     ImGui::End();
@@ -326,8 +336,8 @@ void Game::UpdateHintMask(void)
     #include <iostream>
     int x, y;
     std::cout << std::endl;
-    for(y = 0; y < boardTiles; ++y) {
-        for(x = 0; x < boardTiles; ++x) {
+    for(y = (boardTiles - 1); y > 0; --y) {
+        for(x = (boardTiles - 1); x > 0; --x) {
             if(GameBoard[x][y] == White) {
                 //HintMask[x][y] = White;
                 std::cout << 'W';
@@ -348,32 +358,6 @@ void Game::UpdateHintMask(void)
 }
 #endif
 
-void Game::InitSdl()
-{
-    SDL_Init(SDL_INIT_VIDEO);
-    window = SDL_CreateWindow("Othello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL);
-    if (!window)
-        throw std::runtime_error("Failed to create SDL window");
-
-    gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
-
-    SDL_GL_SetSwapInterval(1);
-}
-
-void Game::InitImgui()
-{
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
-    ImGui_ImplOpenGL2_Init();
-}
 
 void Game::update()
 {
@@ -407,6 +391,49 @@ void Game::update()
         SDL_GL_SwapWindow(window);
 }
 
+void Game::resetGame()
+{
+    // reset disc placements 
+    // reset scores
+    // reset timer if any
+    // reset debugging
+    // reset all, except window 
+
+}
+
+void Game::handleEvents()
+{
+    SDL_Event event;
+    SDL_PollEvent(&event);
+    
+    // SDL events are passed to imgui
+     ImGui_ImplSDL2_ProcessEvent(&event);
+
+    if (event.type == SDL_QUIT 
+        || (event.type == SDL_WINDOWEVENT
+        && event.window.event == SDL_WINDOWEVENT_CLOSE
+        && event.window.windowID == SDL_GetWindowID(window))) 
+        {
+            isRunning = false;
+        }
+}
+
+bool Game::gameRunning()
+{
+    return isRunning;
+}
+
+/*void Game::clean()
+{
+    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+*/
 #if (USE_DEBUG == 1)
 void dbMessage(const std::string &s, bool crlf)
 {
