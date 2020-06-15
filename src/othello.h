@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.01
+ * ver 0.20
  */
 #include <iostream>
 
@@ -17,6 +17,22 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 
+
+#define SERVER_MODULE_IN_USE        //Comment this line if not used
+#define CLIENT_MODULE_IN_USE        //Comment this line if not used
+
+#ifdef SERVER_MODULE_IN_USE
+#include "server.h"
+#endif
+
+#ifdef CLIENT_MODULE_IN_USE
+#include "client.h"
+#endif
+
+/* Sets constants */
+#define WIDTH                   900     // Window width
+#define HEIGHT                  600     // Window height
+#define BOARD_TILES             8       // Number of tiles in a row/column
 #define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
 #define USE_DEBUG               0       //1 = In use, 0 = Not used
 
@@ -38,8 +54,13 @@ class Game {
         void OthelloRender(int width, int height);
         void OnTileClicked(int x, int y);
         void update();
+        void handleEvents();
+        void resetGame();
+        void clean();
 
         bool OthelloButton(int x, int y);
+        bool gameRunning();
+
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
         void FlipDisks(const int x, const int y);
@@ -65,9 +86,10 @@ class Game {
 
     private:
         int CurrentDiskColor;
-        int GameBoard[8][8]; //int GameBoard[boardTiles][boardTiles];
+        int GameBoard[BOARD_TILES][BOARD_TILES]; 
+        bool isRunning;
         #if (USE_HINT_MASK == 1)
-        int HintMask[8][8];
+        int HintMask[BOARD_TILES][BOARD_TILES];
         #endif
         SDL_Window* window;
         SDL_GLContext gl_context;
