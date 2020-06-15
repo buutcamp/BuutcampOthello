@@ -21,9 +21,8 @@
 #define WIDTH                   900     // Window width
 #define HEIGHT                  600     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
-#define USE_HINT_MASK           0       //1 = Used in game, 0 = Not in use
-#define USE_DEBUG               1       //1 = In use, 0 = Not used
-
+#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
+#define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 /*
  * 
@@ -33,31 +32,30 @@ enum pcs {Empty, White, Black, Hint};
 
 class Game {
     public: 
-        Game(int disk_color = White);
+        Game(int disk_color);
         ~Game();
 
+        void OthelloInit();
         void InitSdl();
         void InitImgui();
-        void OthelloInit();
         void OthelloFrame(float deltaTime);
         void OthelloRender(int width, int height);
-        void OnTileClicked(int y, int x);
+        void OnTileClicked(int x, int y);
         void update();
         void handleEvents();
         void resetGame();
-        //void clean();
-        void FlipDisks(const int x, const int y);
-        #if (USE_HINT_MASK == 1)
-        void UpdateHintMask(void);
-        #endif
-
+        void clean();
 
         bool OthelloButton(int x, int y);
         bool gameRunning();
 
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
-        
+        void FlipDisks(const int x, const int y);
+        #if (USE_HINT_MASK == 1)
+        void UpdateHintMask(void);
+        #endif
+
         const int diskRadius;
         const int tileSize;
         const int boardTiles;
@@ -70,6 +68,9 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
+        #if (USE_HINT_MASK == 1)
+        const ImColor diskColorHint;
+        #endif
 
     private:
         int CurrentDiskColor;
@@ -83,7 +84,9 @@ class Game {
 };
 
 #if (USE_DEBUG == 1)
+#include <iostream>
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
- 
+
 #endif      //end othello.h
+
