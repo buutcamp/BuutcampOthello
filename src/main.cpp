@@ -27,6 +27,7 @@ int main(void)
     }
 
     //clean up everything
-    //game.clean();
+    game.clean();
     return 0;
 }
+
