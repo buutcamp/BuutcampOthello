@@ -14,6 +14,8 @@ Game::Game(int diskColor) :
             diskRadius(29), 
             tileSize(64),   
             boardTiles(BOARD_TILES), 
+            //GameBoard{new int[boardTiles][boardTiles] = {{0}}},
+            GameBoard{{0}},
             tileSpacing(2), 
             boardSize(boardTiles * tileSize),
             buttonColor(ImColor(0.0f, 0.5f, 0.0f)), 
@@ -26,7 +28,7 @@ Game::Game(int diskColor) :
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
             #endif
             CurrentDiskColor(diskColor),
-            GameBoard{{0}},
+            reset_game(false),
             #if (USE_HINT_MASK == 1)
             HintMask{{0}}
             #endif
@@ -168,7 +170,7 @@ void Game::OthelloRender(int width, int height)
     {
         ImDrawList* drawList = ImGui::GetWindowDrawList(); 
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
-
+   
         // draw the buttons
         for (int y = 0; y < boardTiles; ++y)
         {
@@ -178,7 +180,7 @@ void Game::OthelloRender(int width, int height)
                 if (OthelloButton(x, y))
                     OnTileClicked(x, y);
             }
-
+        
             ImGui::NewLine();
         }
 
@@ -239,13 +241,20 @@ void Game::OthelloRender(int width, int height)
             #endif
 
         }
-        // Draw Reset button
-        ImGui::Spacing();   
-        ImGui::SameLine(boardSize / 2, 0);
+        
+        //draw combo dropbox
+        static int item = 0;
+        const char* items[] = {"8x8", "10x10", "12x12"};
+        ImGui::Spacing(); 
+        ImGui::PushItemWidth(100);
+        ImGui::SameLine(50, 0);
+        ImGui::Combo("Board size", &item, items, IM_ARRAYSIZE(items)); 
+      
+       // Draw Reset button  
+         ImGui::SameLine(300, 0);
         if(ImGui::Button("Reset"))
         {
-            // Resetting function calls here
-            std::cout << "I am not finished yet" << "\n";
+            reset_game = true;
         }
     }
     ImGui::End();
@@ -393,40 +402,46 @@ void Game::update()
     uint64_t ticksLast = SDL_GetPerformanceCounter();
 
     // prepare new frame
-        ImGui_ImplOpenGL2_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
+    ImGui::NewFrame();
 
-        // game specific logic and rendering goes here
-        int width, height;
-        SDL_GetWindowSize(window, &width, &height);
+    // game specific logic and rendering goes here
+    int width, height;
+    SDL_GetWindowSize(window, &width, &height);
 
-        uint64_t ticksNow = SDL_GetPerformanceCounter();
-        float deltaTime = (ticksNow - ticksLast)*1000 / (float)SDL_GetPerformanceFrequency();
-        ticksLast = ticksNow;
+    uint64_t ticksNow = SDL_GetPerformanceCounter();
+    float deltaTime = (ticksNow - ticksLast)*1000 / (float)SDL_GetPerformanceFrequency();
+    ticksLast = ticksNow;
 
-        OthelloFrame(deltaTime);
-        OthelloRender(width, height);
+    OthelloFrame(deltaTime);
+    OthelloRender(width, height);
         
-        // let imgui handle rest of the rendering process
-        ImGui::Render();
+    // let imgui handle rest of the rendering process
+    ImGui::Render();
 
-        glViewport(0, 0, width, height);
-        //glClearColor(1, 0, 0, 1);
-        //glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(0, 0, width, height);
+    //glClearColor(1, 0, 0, 1);
+    //glClear(GL_COLOR_BUFFER_BIT);
 
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
-        SDL_GL_SwapWindow(window);
+    SDL_GL_SwapWindow(window);
 }
 
-void Game::resetGame()
+bool Game::resetGame()
 {
     // reset disc placements 
     // reset scores
     // reset timer if any
     // reset debugging
     // reset all, except window 
+    if(reset_game)
+    {
+        reset_game = false;
+        return true;
+    }
+    return false;
 }
 void Game::handleEvents()
 {
