@@ -14,7 +14,6 @@ Game::Game(int diskColor) :
             diskRadius(29), 
             tileSize(64),   
             boardTiles(BOARD_TILES), 
-            //GameBoard{new int[boardTiles][boardTiles] = {{0}}},
             GameBoard{{0}},
             tileSpacing(2), 
             boardSize(boardTiles * tileSize),
@@ -28,12 +27,18 @@ Game::Game(int diskColor) :
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
             #endif
             CurrentDiskColor(diskColor),
-            reset_game(false),
             #if (USE_HINT_MASK == 1)
-            HintMask{{0}}
+            HintMask{{0}},
             #endif
-            {}
-Game::~Game() {}
+            reset_game(false),
+            boardSizeChanged(false)
+            {
+                GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
+                HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
+            }
+
+Game::~Game()
+ {}
 
 // Window intialization
 void Game::InitSdl()
@@ -221,7 +226,7 @@ void Game::OthelloRender(int width, int height)
                     if(HintMask[x][y] == Hint) {
                         //Place hint here
                         diskColor = diskColorHint;
-                        drawList->AddCircleFilled(diskPos, (diskRadius / 2), diskColor, 15);
+                        drawList->AddCircleFilled(diskPos, (diskRadius / 4), diskColor, 15);
                         #if (USE_DEBUG == 1)
                         txt = "H";
                         dbMessage(txt, false);
@@ -240,16 +245,41 @@ void Game::OthelloRender(int width, int height)
             dbMessage(txt, true);
             #endif
 
-        }
-        
+        }        
         //draw combo dropbox
         static int item = 0;
+        int current_item = item;
         const char* items[] = {"8x8", "10x10", "12x12"};
         ImGui::Spacing(); 
         ImGui::PushItemWidth(100);
         ImGui::SameLine(50, 0);
         ImGui::Combo("Board size", &item, items, IM_ARRAYSIZE(items)); 
-      
+
+        // set number of tiles/ board size based on the selected item
+       if(current_item != item)
+        {
+            switch(item)
+             {
+                case 0: 
+                    current_item = 0;
+                    boardTiles = BOARD_TILES;
+                    break;
+                case 1: 
+                    current_item = 1;
+                    boardTiles = BOARD_TILES + 2;
+                    break;
+                case 2:
+                    current_item = 2;
+                    boardTiles = BOARD_TILES + 4;
+                    break;
+             }
+             boardSizeChanged = true;
+             GameBoard.clear();
+             GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+             HintMask.clear();
+             HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+        }
+       
        // Draw Reset button  
          ImGui::SameLine(300, 0);
         if(ImGui::Button("Reset"))
@@ -372,7 +402,6 @@ void Game::FlipDisks(const int x, const int y)
 #if (USE_HINT_MASK == 1)
 void Game::UpdateHintMask(void)
 {
-    #include <iostream>
     int x, y;
     std::cout << std::endl;
     for(y = 0; y < boardTiles; ++y) {
@@ -431,14 +460,19 @@ void Game::update()
 
 bool Game::resetGame()
 {
-    // reset disc placements 
-    // reset scores
-    // reset timer if any
-    // reset debugging
-    // reset all, except window 
+    // reset all (disc placements, scores, timer if any, debugging ), except window 
     if(reset_game)
     {
         reset_game = false;
+        return true;
+    }
+    return false;
+}
+bool Game::changeBoardsize()
+{
+   if(boardSizeChanged)
+    {
+        boardSizeChanged = false;
         return true;
     }
     return false;

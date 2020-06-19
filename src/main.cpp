@@ -19,7 +19,7 @@ int main(void)
 
     while (game.gameRunning())
     {
-        if(game.resetGame())
+        if(game.resetGame() || game.changeBoardsize())
             game.OthelloInit();
 
         game.handleEvents();

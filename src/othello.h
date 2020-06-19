@@ -16,7 +16,7 @@
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
-#include <memory>
+#include <vector>
 
 /* Sets constants */
 #define WIDTH                   900     // Window width
@@ -45,6 +45,7 @@ class Game {
         void update();
         void handleEvents();
         bool resetGame();
+        bool changeBoardsize();
         void clean();
 
         bool OthelloButton(int x, int y);
@@ -62,9 +63,7 @@ class Game {
         const int tileSize;
         
         int boardTiles;
-        //std::unique_ptr<std::unique_ptr<int[]>[]>  GameBoard; // declar dynamic array size
-        int GameBoard[BOARD_TILES][BOARD_TILES]; 
-        //int GameBoard[boardTiles][boardTiles]; 
+        std::vector<std::vector<int>> GameBoard;
         const int tileSpacing;
         const int boardSize;
 
@@ -79,11 +78,14 @@ class Game {
         #endif
 
         int CurrentDiskColor;
-        bool reset_game;
-        bool isRunning;
         #if (USE_HINT_MASK == 1)
-        int HintMask[8][8];
+        std::vector<std::vector<int>> HintMask;
         #endif
+
+        bool reset_game;
+        bool boardSizeChanged;
+        bool isRunning;
+
         SDL_Window* window;
         SDL_GLContext gl_context;
 };
