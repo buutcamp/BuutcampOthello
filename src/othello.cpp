@@ -30,11 +30,8 @@ Game::Game(int diskColor) :
             HintMask{{0}},
             #endif
             CurrentDiskColor(diskColor),
-            GameBoard{{0}},
-            #if (USE_HINT_MASK == 1)
-            HintMask{{0}}
-            #endif
-            {}
+            GameBoard{{0}}
+              {}
 Game::~Game() {}
 
 // Window intialization
@@ -242,14 +239,6 @@ void Game::OthelloRender(int width, int height)
             dbMessage(txt, true);
             #endif
 
-        }
-        // Draw Reset button
-        ImGui::Spacing();   
-        ImGui::SameLine(boardSize / 2, 0);
-        if(ImGui::Button("Reset"))
-        {
-            // Resetting function calls here
-            std::cout << "I am not finished yet" << "\n";
         }
 
         // Draw Reset button
