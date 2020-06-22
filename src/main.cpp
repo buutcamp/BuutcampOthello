@@ -28,6 +28,6 @@ int main(void)
 
     //clean up everything
     game.clean();
-    return 0;
-}
+	return 0;
 
+}

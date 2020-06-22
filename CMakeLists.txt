@@ -5,11 +5,15 @@ project(Othello)
 set(OTHELLO_SOURCES
 	src/main.cpp
 	src/othello.cpp
+	src/server.cpp
+	src/client.cpp
 )
 
 set(OTHELLO_HEADERS
 	src/main.h
 	src/othello.h
+	src/server.h
+	src/client.h
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")

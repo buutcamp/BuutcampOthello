@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.01
+ * ver 0.20
  */
 #include <iostream>
 
@@ -16,6 +16,18 @@
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
+
+
+#define SERVER_MODULE_IN_USE        //Comment this line if not used
+#define CLIENT_MODULE_IN_USE        //Comment this line if not used
+
+#ifdef SERVER_MODULE_IN_USE
+#include "server.h"
+#endif
+
+#ifdef CLIENT_MODULE_IN_USE
+#include "client.h"
+#endif
 
 /* Sets constants */
 #define WIDTH                   900     // Window width
@@ -77,7 +89,7 @@ class Game {
         int GameBoard[BOARD_TILES][BOARD_TILES]; 
         bool isRunning;
         #if (USE_HINT_MASK == 1)
-        int HintMask[8][8];
+        int HintMask[BOARD_TILES][BOARD_TILES];
         #endif
         SDL_Window* window;
         SDL_GLContext gl_context;
