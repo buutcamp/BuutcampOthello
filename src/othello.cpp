@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.10
+ * ver 0.20
  */
 
 #include "othello.h"
@@ -8,6 +8,8 @@
 #if (USE_DEBUG == 1)
 std::string txt;
 #endif
+
+std::string ver_txt = "ver 0.20";      
 
 
 Game::Game(int diskColor) : 
@@ -17,7 +19,7 @@ Game::Game(int diskColor) :
             GameBoard{{0}},
             tileSpacing(2), 
             boardSize(boardTiles * tileSize),
-            buttonColor(ImColor(0.0f, 0.5f, 0.0f)), 
+            buttonColor(ImColor(0.0f, 0.5f, 0.0f)),
             buttonHoverColor(ImColor(0.0f, 0.7f, 0.0f)),
             buttonActiveColor(ImColor(0.0f, 0.85f, 0.0f)),
             boardColor(ImColor(0.0f, 0.25f, 0.0f)),
@@ -25,11 +27,9 @@ Game::Game(int diskColor) :
             diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
             #if (USE_HINT_MASK == 1)
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
-            #endif
-            CurrentDiskColor(diskColor),
-            #if (USE_HINT_MASK == 1)
             HintMask{{0}},
             #endif
+            CurrentDiskColor(diskColor),
             reset_game(false),
             boardSizeChanged(false)
             {
@@ -37,8 +37,7 @@ Game::Game(int diskColor) :
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
             }
 
-Game::~Game()
- {}
+Game::~Game() {}
 
 // Window intialization
 void Game::InitSdl()
@@ -58,8 +57,8 @@ void Game::InitSdl()
         isRunning = false;
         throw std::runtime_error("Failed to intialize SDL");
     }
-    
 }
+
 void Game::InitImgui()
 {
     IMGUI_CHECKVERSION();
@@ -171,7 +170,7 @@ void Game::OthelloRender(int width, int height)
     ImGui::SetNextWindowSize(ImVec2((float)width, (float)height));
 
     // creates a window with no visible frames
-    ImGui::Begin("Othello", nullptr, ImGuiWindowFlags_NoDecoration);
+    ImGui::Begin("Othello ", nullptr, ImGuiWindowFlags_NoDecoration);
     {
         ImDrawList* drawList = ImGui::GetWindowDrawList(); 
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
@@ -282,6 +281,7 @@ void Game::OthelloRender(int width, int height)
        
        // Draw Reset button  
          ImGui::SameLine(300, 0);
+
         if(ImGui::Button("Reset"))
         {
             reset_game = true;
@@ -338,14 +338,14 @@ int Game::TestPosition(const int x, const int y)
 {
     int reply;
 
-    reply = TestDirection(x, y, -1, 0);
-    reply += TestDirection(x, y, 1, 0);
-    reply += TestDirection(x, y, 0, -1);
-    reply += TestDirection(x, y, 0, 1);
-    reply += TestDirection(x, y, -1, -1);
-    reply += TestDirection(x, y, 1, 1);
-    reply += TestDirection(x, y, -1, 1);
-    reply += TestDirection(x, y, 1, -1);
+    reply = TestDirection(x, y, -1, 0);     //Test to left
+    reply += TestDirection(x, y, 1, 0);     //Test to right
+    reply += TestDirection(x, y, 0, -1);    //Test to up
+    reply += TestDirection(x, y, 0, 1);     //Test to down
+    reply += TestDirection(x, y, -1, -1);   //Diagonal test left up
+    reply += TestDirection(x, y, 1, 1);     //Diagonal test right down
+    reply += TestDirection(x, y, -1, 1);    //Diagonal test left down
+    reply += TestDirection(x, y, 1, -1);    //Diagonal test right up
 
     //Return count of possible flippable disks around point(x,y)
     return reply;
@@ -460,7 +460,6 @@ void Game::update()
 
 bool Game::resetGame()
 {
-    // reset all (disc placements, scores, timer if any, debugging ), except window 
     if(reset_game)
     {
         reset_game = false;
@@ -468,6 +467,7 @@ bool Game::resetGame()
     }
     return false;
 }
+
 bool Game::changeBoardsize()
 {
    if(boardSizeChanged)
@@ -477,21 +477,23 @@ bool Game::changeBoardsize()
     }
     return false;
 }
+
 void Game::handleEvents()
 {
     SDL_Event event;
     SDL_PollEvent(&event);
-    
+
     // SDL events are passed to imgui
      ImGui_ImplSDL2_ProcessEvent(&event);
-    if (event.type == SDL_QUIT 
+    if (event.type == SDL_QUIT
         || (event.type == SDL_WINDOWEVENT
         && event.window.event == SDL_WINDOWEVENT_CLOSE
-        && event.window.windowID == SDL_GetWindowID(window))) 
-        {
-            isRunning = false;
-        }
+        && event.window.windowID == SDL_GetWindowID(window)))
+    {
+        isRunning = false;
+    }
 }
+
 bool Game::gameRunning()
 {
     return isRunning;

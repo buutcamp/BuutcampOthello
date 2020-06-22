@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.01
+ * ver 0.20
  */
 #include <iostream>
 
@@ -17,6 +17,18 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 #include <vector>
+
+
+#define SERVER_MODULE_IN_USE        //Comment this line if not used
+#define CLIENT_MODULE_IN_USE        //Comment this line if not used
+
+#ifdef SERVER_MODULE_IN_USE
+#include "server.h"
+#endif
+
+#ifdef CLIENT_MODULE_IN_USE
+#include "client.h"
+#endif
 
 /* Sets constants */
 #define WIDTH                   900     // Window width
