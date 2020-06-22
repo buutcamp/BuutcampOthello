@@ -9,10 +9,11 @@
 std::string txt;
 #endif
 
-std::string ver_txt = "ver 0.20";       //Remember update this!
+std::string ver_txt = "ver 0.20";      
 
 
 Game::Game(int diskColor) : 
+
             diskRadius(29),
             tileSize(64),
             boardTiles(BOARD_TILES),
@@ -29,7 +30,10 @@ Game::Game(int diskColor) :
             HintMask{{0}},
             #endif
             CurrentDiskColor(diskColor),
-            GameBoard{{0}}
+            GameBoard{{0}},
+            #if (USE_HINT_MASK == 1)
+            HintMask{{0}}
+            #endif
             {}
 Game::~Game() {}
 
@@ -237,6 +241,15 @@ void Game::OthelloRender(int width, int height)
             txt = " ";
             dbMessage(txt, true);
             #endif
+
+        }
+        // Draw Reset button
+        ImGui::Spacing();   
+        ImGui::SameLine(boardSize / 2, 0);
+        if(ImGui::Button("Reset"))
+        {
+            // Resetting function calls here
+            std::cout << "I am not finished yet" << "\n";
         }
 
         // Draw Reset button
@@ -421,13 +434,7 @@ void Game::update()
 }
 
 void Game::resetGame()
-{
-    // reset disc placements
-    // reset scores
-    // reset timer if any
-    // reset debugging
-    // reset all, except window
-}
+{}
 
 void Game::handleEvents()
 {
@@ -468,3 +475,4 @@ void dbMessage(const std::string &s, bool crlf)
         std::cout << std::endl;
 }
 #endif
+

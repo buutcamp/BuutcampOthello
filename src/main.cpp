@@ -1,4 +1,3 @@
-
 /*#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -30,4 +29,5 @@ int main(void)
     //clean up everything
     game.clean();
 	return 0;
+
 }

@@ -98,6 +98,7 @@ class Game {
 #if (USE_DEBUG == 1)
 #include <iostream>
 void dbMessage(const std::string &s, bool crlf);
-#endif
+#endif // end if USE_DEBUG
 
 #endif      //end othello.h
+
