@@ -16,6 +16,7 @@
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
+#include <vector>
 
 
 #define SERVER_MODULE_IN_USE        //Comment this line if not used
@@ -55,7 +56,8 @@ class Game {
         void OnTileClicked(int x, int y);
         void update();
         void handleEvents();
-        void resetGame();
+        bool resetGame();
+        bool changeBoardsize();
         void clean();
 
         bool OthelloButton(int x, int y);
@@ -68,9 +70,12 @@ class Game {
         void UpdateHintMask(void);
         #endif
 
+    private:
         const int diskRadius;
         const int tileSize;
-        const int boardTiles;
+        
+        int boardTiles;
+        std::vector<std::vector<int>> GameBoard;
         const int tileSpacing;
         const int boardSize;
 
@@ -84,13 +89,15 @@ class Game {
         const ImColor diskColorHint;
         #endif
 
-    private:
         int CurrentDiskColor;
-        int GameBoard[BOARD_TILES][BOARD_TILES]; 
-        bool isRunning;
         #if (USE_HINT_MASK == 1)
-        int HintMask[BOARD_TILES][BOARD_TILES];
+        std::vector<std::vector<int>> HintMask;
         #endif
+
+        bool reset_game;
+        bool boardSizeChanged;
+        bool isRunning;
+
         SDL_Window* window;
         SDL_GLContext gl_context;
 };

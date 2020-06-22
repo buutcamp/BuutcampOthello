@@ -9,23 +9,23 @@
 #include "main.h"
 #include "othello.h"
 
-//SDL_Window* window;
-//SDL_GLContext gl_context;
-
 int main(void)
 {
     Game game(White);
-
+    
     game.InitSdl();
     game.InitImgui();
     game.OthelloInit();
 
     while (game.gameRunning())
     {
-        game.handleEvents();
-        game.update();
-    }
+        if(game.resetGame() || game.changeBoardsize())
+            game.OthelloInit();
 
+        game.handleEvents();
+        game.update();   
+        
+    }
     //clean up everything
     game.clean();
 	return 0;
