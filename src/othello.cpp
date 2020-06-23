@@ -19,19 +19,18 @@ Game::Game(int diskColor) :
             GameBoard{{0}},
             tileSpacing(2), 
             boardSize(boardTiles * tileSize),
-            buttonColor(ImColor(0.0f, 0.5f, 0.0f)),
-            buttonHoverColor(ImColor(0.0f, 0.7f, 0.0f)),
-            buttonActiveColor(ImColor(0.0f, 0.85f, 0.0f)),
-            boardColor(ImColor(0.0f, 0.25f, 0.0f)),
+            buttonColor(ImColor(0.0f, 0.3f, 0.20f)), 
+            buttonHoverColor(ImColor(0.10f, 0.3f, 0.251)),
+            buttonActiveColor(ImColor( 0.0f, 0.7f, 0.0f)),
+            boardColor(ImColor(.10f, 0.10f, 0.10f)),
             diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
-            diskColorBlack(ImColor(0.15f, 0.15f, 0.15f)),
-            #if (USE_HINT_MASK == 1)
+            diskColorBlack(ImColor(0.0f, 0.0f, 0.0f)),
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
             HintMask{{0}},
-            #endif
             CurrentDiskColor(diskColor),
             reset_game(false),
-            boardSizeChanged(false)
+            boardSizeChanged(false),
+            showHint(true)
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
@@ -77,9 +76,8 @@ void Game::OthelloInit()
     for(int y = 0; y < boardTiles; ++y) {
         for(int x = 0; x < boardTiles; ++x) {
             GameBoard[x][y] = Empty;
-            #if (USE_HINT_MASK == 1)
-            HintMask[x][y] = Empty;
-            #endif
+            if (showHint)
+                HintMask[x][y] = Empty;
         }
     }
     //Start placement
@@ -89,11 +87,9 @@ void Game::OthelloInit()
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
     CurrentDiskColor = Black; // Player with Black discs begin game
-    #if (USE_HINT_MASK == 1)
-    UpdateHintMask();
-    #endif
-
-
+    if (showHint)
+        UpdateHintMask();
+    
     // adjusts the spacing between buttons
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing, tileSpacing));
 
@@ -132,19 +128,10 @@ void Game::OnTileClicked(int x, int y)
                 CurrentDiskColor = Black;
             else
                 CurrentDiskColor = White;
-            #if (USE_HINT_MASK == 1)
-            UpdateHintMask();
-            #endif
+            if (showHint)
+                UpdateHintMask();
         }
     }
-    //Testing
-    //if(GameBoard[x][y] == White) {
-    //    GameBoard[x][y] = Black;
-    //} else if(GameBoard[x][y] == Black) {
-    //    GameBoard[x][y] = White;
-    //} else {
-    //    //Empty
-    //}
 }
 
 bool Game::OthelloButton(int x, int y)
@@ -217,11 +204,11 @@ void Game::OthelloRender(int width, int height)
                     #endif
                 } else {
                     //Empty location or hint
-                    #if ((USE_DEBUG == 1) && (USE_HINT_MASK == 0))
+                    #if ((USE_DEBUG == 1) && (showHint == false))
                     txt = "_";
                     dbMessage(txt, false);
                     #endif
-                    #if (USE_HINT_MASK == 1)
+                    if (showHint){
                     if(HintMask[x][y] == Hint) {
                         //Place hint here
                         diskColor = diskColorHint;
@@ -236,7 +223,7 @@ void Game::OthelloRender(int width, int height)
                         dbMessage(txt, false);
                         #endif
                     }
-                    #endif
+                  }
                 }
             }
             #if (USE_DEBUG == 1)
@@ -252,7 +239,7 @@ void Game::OthelloRender(int width, int height)
         ImGui::Spacing(); 
         ImGui::PushItemWidth(100);
         ImGui::SameLine(50, 0);
-        ImGui::Combo("Board size", &item, items, IM_ARRAYSIZE(items)); 
+        ImGui::Combo("Board Size", &item, items, IM_ARRAYSIZE(items)); 
 
         // set number of tiles/ board size based on the selected item
        if(current_item != item)
@@ -275,17 +262,23 @@ void Game::OthelloRender(int width, int height)
              boardSizeChanged = true;
              GameBoard.clear();
              GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-             HintMask.clear();
-             HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+            if (showHint)
+            {
+                HintMask.clear();
+                HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+            }
         }
-       
-       // Draw Reset button  
-         ImGui::SameLine(300, 0);
-
+        
+        // Draw Reset button  
+         ImGui::SameLine(250, 0);
         if(ImGui::Button("Reset"))
         {
             reset_game = true;
         }
+
+        // draw checkbox
+        ImGui::SameLine(350, 0);
+        ImGui::Checkbox("Show Next Move Hint", &showHint);
     }
     ImGui::End();
 }
@@ -399,7 +392,6 @@ void Game::FlipDisks(const int x, const int y)
     }
 }
 
-#if (USE_HINT_MASK == 1)
 void Game::UpdateHintMask(void)
 {
     int x, y;
@@ -424,7 +416,6 @@ void Game::UpdateHintMask(void)
     }
     std::cout << std::endl;
 }
-#endif
 
 void Game::update()
 {

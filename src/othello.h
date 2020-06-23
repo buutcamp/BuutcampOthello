@@ -31,10 +31,10 @@
 #endif
 
 /* Sets constants */
-#define WIDTH                   900     // Window width
-#define HEIGHT                  600     // Window height
+#define WIDTH                   1000     // Window width
+#define HEIGHT                  800     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
-#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
+//#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
 #define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 /*
@@ -66,9 +66,9 @@ class Game {
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
         void FlipDisks(const int x, const int y);
-        #if (USE_HINT_MASK == 1)
+       // #if (USE_HINT_MASK == 1)
         void UpdateHintMask(void);
-        #endif
+       // #endif
 
     private:
         const int diskRadius;
@@ -85,18 +85,16 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
-        #if (USE_HINT_MASK == 1)
+       // #if (USE_HINT_MASK == 1)
         const ImColor diskColorHint;
-        #endif
+        std::vector<std::vector<int>> HintMask;
+       // #endif
 
         int CurrentDiskColor;
-        #if (USE_HINT_MASK == 1)
-        std::vector<std::vector<int>> HintMask;
-        #endif
-
         bool reset_game;
         bool boardSizeChanged;
         bool isRunning;
+        bool showHint;
 
         SDL_Window* window;
         SDL_GLContext gl_context;
