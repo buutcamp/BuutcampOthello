@@ -56,10 +56,12 @@ class Game {
         void OnTileClicked(int x, int y);
         void update();
         void handleEvents();
-        bool resetGame();
-        bool changeBoardsize();
         void clean();
-
+        void updateScore();
+        void updatePlayerTurn();
+        bool resetGame();
+        bool gameOver();
+        bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
 
@@ -89,12 +91,18 @@ class Game {
         const ImColor diskColorHint;
         std::vector<std::vector<int>> HintMask;
        // #endif
-
+        int scoreWhite;
+        int scoreBlack;
+        int playerTurn;
+        int passed_gameTurn_counter; 
+        int hintCount;
         int CurrentDiskColor;
         bool reset_game;
         bool boardSizeChanged;
         bool isRunning;
         bool showHint;
+        bool game_over;
+        bool pass_turn;
 
         SDL_Window* window;
         SDL_GLContext gl_context;
