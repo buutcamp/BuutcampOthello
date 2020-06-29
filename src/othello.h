@@ -31,10 +31,10 @@
 #endif
 
 /* Sets constants */
-#define WIDTH                   900     // Window width
-#define HEIGHT                  600     // Window height
+#define WIDTH                   1000     // Window width
+#define HEIGHT                  800     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
-#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
+//#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
 #define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 /*
@@ -56,19 +56,21 @@ class Game {
         void OnTileClicked(int x, int y);
         void update();
         void handleEvents();
-        bool resetGame();
-        bool changeBoardsize();
         void clean();
-
+        void updateScore();
+        void updatePlayerTurn();
+        bool resetGame();
+        bool gameOver();
+        bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
 
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
         void FlipDisks(const int x, const int y);
-        #if (USE_HINT_MASK == 1)
+       // #if (USE_HINT_MASK == 1)
         void UpdateHintMask(void);
-        #endif
+       // #endif
 
     private:
         const int diskRadius;
@@ -85,18 +87,22 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
-        #if (USE_HINT_MASK == 1)
+       // #if (USE_HINT_MASK == 1)
         const ImColor diskColorHint;
-        #endif
-
-        int CurrentDiskColor;
-        #if (USE_HINT_MASK == 1)
         std::vector<std::vector<int>> HintMask;
-        #endif
-
+       // #endif
+        int scoreWhite;
+        int scoreBlack;
+        int playerTurn;
+        int passed_gameTurn_counter; 
+        int hintCount;
+        int CurrentDiskColor;
         bool reset_game;
         bool boardSizeChanged;
         bool isRunning;
+        bool showHint;
+        bool game_over;
+        bool pass_turn;
 
         SDL_Window* window;
         SDL_GLContext gl_context;

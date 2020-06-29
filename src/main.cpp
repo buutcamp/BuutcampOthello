@@ -17,13 +17,14 @@ int main(void)
     game.InitImgui();
     game.OthelloInit();
 
-    while (game.gameRunning())
+    while (game.gameRunning()) 
     {
-        if(game.resetGame() || game.changeBoardsize())
+        if((game.resetGame() || game.changeBoardsize()))
             game.OthelloInit();
-
+            
         game.handleEvents();
         game.update();   
+        game.gameOver();
         
     }
     //clean up everything
