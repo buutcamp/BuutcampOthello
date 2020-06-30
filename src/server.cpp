@@ -5,7 +5,6 @@
  */
 
 #include "server.h"
-#include <thread>       //https://en.cppreference.com/w/cpp/thread
 
 //g++ -std=c++17 server.cpp -o server
 //gcc server.c -o server
@@ -91,7 +90,8 @@ int Server::Start(const int port)
     }
 
     isRunning = true;
-    std::thread srv(Serving);
+    //std::thread srv(Serving);
+    srv = std::thread(&Server::Serving, this);
     return 0;
 }
 

@@ -20,7 +20,8 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #include <netinet/in.h> 
 #include <string.h> 
 #include <vector>
-
+#include <thread>       //https://en.cppreference.com/w/cpp/thread
+#include "definet.h"
 
 using str = std::string;
 using str_vector = std::vector<str>;
@@ -57,15 +58,7 @@ class Server {
         uint16_t SrvStatus;
         bool isRunning = false;
         char buffer[1024];
+        std::thread srv;
 };
-
-#define ERR_OPEN_SOCKET     0x0001
-#define ERR_CREATE_SOCKET   0x0002
-#define ERR_SOCKET_OPTIONS  0x0004
-#define ERR_BINDING         0x0008
-#define ERR_LISTEN          0x0010
-#define ERR_ACCEPTING       0x0020
-#define ERR_CONNECTING      0x0040
-#define ERR_INVALID_ADDRESS 0x0080
 
 #endif     //end _SERVER_H_

@@ -5,7 +5,6 @@
  */
 
 #include "client.h"
-#include <thread>       //https://en.cppreference.com/w/cpp/thread
 
 /*
  * Client Socket
@@ -69,6 +68,7 @@ int Client::Connect()
     } else {
         ClStatus &= ~(ERR_CONNECTING);
         isConnected = true;
+        srv = std::thread(&Client::Serving, this);
         return 0;
     }
 }

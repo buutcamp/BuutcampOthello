@@ -11,7 +11,7 @@
 
 int main(void)
 {
-    Game game(White);
+    Game game(Black);
     
     game.InitSdl();
     game.InitImgui();
