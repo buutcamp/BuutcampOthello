@@ -122,6 +122,14 @@ bool Server::GetMessage(str& text)
         text = MessagesIn[0].sMessage;
         //MessagesIn[0].id;
         tst = MessagesIn[0].status;
+        if((tst & RESYNCH_GAMETABLE) > 0) {
+            //We get other sides gametable to overwrite this ones
+            //if(game::boardSize)
+        }
+        if((tst & (AI_ILLEGAL_MOVE | HUMAN_ILLEGAL_MOVE)) > 0) {
+            //Illegal move, we must synch game tables
+            std::cout << "AI made illegal move! " << text << std::endl;
+        }
         if((tst & AI_FLAG) > 0) {
             //Where AI want this message to sended?
             std::cout << "AI message: " << text << std::endl;
@@ -191,5 +199,5 @@ void Server::Serving()
         if(KillSwitch > 60000)
             break;
     }
-    
+
 }

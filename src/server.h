@@ -13,12 +13,12 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #define _SERVER_H_
 
 #include <iostream>
-#include <unistd.h> 
-#include <stdio.h> 
-#include <sys/socket.h> 
-#include <stdlib.h> 
-#include <netinet/in.h> 
-#include <string.h> 
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <string.h>
 #include <vector>
 #include <thread>       //https://en.cppreference.com/w/cpp/thread
 #include "definet.h"

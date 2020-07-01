@@ -29,17 +29,17 @@ Client::Client(/* args */)
     ServerSocket = 0;
     ServerPort = PORT;
 
-    if ((ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
+    if ((ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
         ClStatus |= ERR_CREATE_SOCKET;
         #if (USE_DEBUG == 1)
         dbMessage("Can't create Server socket!", true);
         #endif
-    } 
-   
+    }
+
     Server_addr.sin_family = AF_INET;
     Server_addr.sin_port = ServerPort;
-       
+
     // Convert IPv4 and IPv6 addresses from text to binary form
     if(inet_pton(AF_INET, AddressString, &Server_addr.sin_addr) <= 0) {
         ClStatus |= ERR_INVALID_ADDRESS;
@@ -51,7 +51,7 @@ Client::Client(/* args */)
     memset(buffer, 0, sizeof(buffer));
     isConnected = false;
 }
- 
+
 Client::~Client()
 {
     Disconnect();
@@ -168,5 +168,5 @@ void Client::Serving()
         if(KillSwitch > 60000)
             break;
     }
-    
+
 }

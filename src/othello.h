@@ -17,10 +17,9 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 #include <vector>
+#include "definet.h"
 
 
-#define SERVER_MODULE_IN_USE        //Comment this line if not used
-#define CLIENT_MODULE_IN_USE        //Comment this line if not used
 
 #ifdef SERVER_MODULE_IN_USE
 #include "server.h"
@@ -30,21 +29,15 @@
 #include "client.h"
 #endif
 
-/* Sets constants */
-#define WIDTH                   1000     // Window width
-#define HEIGHT                  800     // Window height
-#define BOARD_TILES             8       // Number of tiles in a row/column
-//#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
-#define USE_DEBUG               0       //1 = In use, 0 = Not used
-
 /*
  * 
  */
 
 enum pcs {Empty, White, Black, Hint};
+enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
 
 class Game {
-    public: 
+    public:
         Game(int disk_color);
         ~Game();
 
@@ -68,16 +61,16 @@ class Game {
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
         void FlipDisks(const int x, const int y);
-       // #if (USE_HINT_MASK == 1)
         void UpdateHintMask(void);
-       // #endif
+        bool LocalLock;
 
     private:
         const int diskRadius;
         const int tileSize;
-        
+
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
+        std::vector<std::vector<int>> HintMask;
         const int tileSpacing;
         const int boardSize;
 
@@ -87,14 +80,12 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
-       // #if (USE_HINT_MASK == 1)
         const ImColor diskColorHint;
-        std::vector<std::vector<int>> HintMask;
-       // #endif
+
         int scoreWhite;
         int scoreBlack;
         int playerTurn;
-        int passed_gameTurn_counter; 
+        int passed_gameTurn_counter;
         int hintCount;
         int CurrentDiskColor;
         bool reset_game;
