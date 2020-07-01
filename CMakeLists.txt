@@ -14,6 +14,7 @@ set(OTHELLO_HEADERS
 	src/othello.h
 	src/server.h
 	src/client.h
+	src/definet.h
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")

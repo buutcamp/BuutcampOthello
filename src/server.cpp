@@ -5,7 +5,6 @@
  */
 
 #include "server.h"
-#include <thread>       //https://en.cppreference.com/w/cpp/thread
 
 //g++ -std=c++17 server.cpp -o server
 //gcc server.c -o server
@@ -91,7 +90,8 @@ int Server::Start(const int port)
     }
 
     isRunning = true;
-    std::thread srv(Serving);
+    //std::thread srv(Serving);
+    srv = std::thread(&Server::Serving, this);
     return 0;
 }
 
@@ -115,15 +115,37 @@ int Server::PutMessage(const str text, const uint16_t flags)
 
 bool Server::GetMessage(str& text)
 {
+    uint16_t tst;
     if(MessagesIn.empty()) {
         return false;
     } else {
         text = MessagesIn[0].sMessage;
-        //Messages[0].id;
-        //Messages[0].status;
-        /*
-         * Message flags handle here!
-         */
+        //MessagesIn[0].id;
+        tst = MessagesIn[0].status;
+        if((tst & AI_FLAG) > 0) {
+            //Where AI want this message to sended?
+            std::cout << "AI message: " << text << std::endl;
+        }
+        if((tst & AI_MOVE) > 0) {
+            //Use this, if AI-moves are handled diffrrently from humans moves
+            //Check move data and call 'Game::OnTileClicked(int x, int y)'
+            std::cout << "AI move " << text << std::endl;
+        }
+        if((tst & CHAT_TEXT) > 0) {
+            //Where we print chat-text?
+            std::cout << "Chat [" << text << "]." << std::endl;
+        }
+        if((tst & HUMAN_MOVE) > 0) {
+            //Use this, if humans moves are handled diffrrently from AI-moves
+            //Check move data and call 'Game::OnTileClicked(int x, int y)'
+            std::cout << "Human move " << text << std::endl;
+        }
+        if((tst & (AI_MOVE | HUMAN_MOVE)) > 0) {
+            //Use this if human and AI move handling are not different
+            //Check move data and call 'Game::OnTileClicked(int x, int y)'
+            std::cout << "Move " << text << std::endl;
+        }
+
         MessagesIn.erase(MessagesIn.begin());
         return true;
     }
