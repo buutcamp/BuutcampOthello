@@ -1,13 +1,12 @@
 /*
  * Server
  * server.cpp
- * ver 0.20
+ * ver 0.20     //1st include to project
+ * ver 0.25     //change from class to subroutine
  */
 
 #include "server.h"
 
-//g++ -std=c++17 server.cpp -o server
-//gcc server.c -o server
 //https://en.cppreference.com/w/
 
 /*
@@ -24,104 +23,127 @@
 
 using namespace std::literals::chrono_literals;
 
-Server::Server()
-{
-    MessagesIn = {};
-    MessagesOut = {};
-    message_id = 0;
-    ValRead = 0;
-    SrvStatus = 0;
-    SocketOptions = 1;
-    ClientSocket = 0;
+//ver 0.25
+int Srv_message_id;
+std::vector<sMsg> Srv_MessagesIn;
+std::vector<sMsg> Srv_MessagesOut;
+//TCP/IP
+struct sockaddr_in Srv_Server_addr;
+struct sockaddr_in Srv_Client_addr;
+int Srv_addrlen = sizeof(Srv_Server_addr);
+int Srv_ServerSocket = 0;
+int Srv_ServerPort = PORT;
+int Srv_ClientSocket = 0;
+int Srv_SocketOptions = 1;
+int Srv_ValRead = 0;
+uint16_t SrvStatus;
+bool Srv_isRunning = false;
+char Srv_buffer[1024];
+std::thread Srv_srv;
 
-    if((ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+//Server::Server()
+void Server_Initialize()
+{
+    Srv_MessagesIn = {};
+    Srv_MessagesOut = {};
+    Srv_message_id = 0;
+    Srv_ValRead = 0;
+    SrvStatus = 0;
+    Srv_SocketOptions = 1;
+    Srv_ClientSocket = 0;
+
+    if((Srv_ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         SrvStatus |= ERR_CREATE_SOCKET;
         #if (USE_DEBUG == 1)
         dbMessage("Can't create Server socket!", true);
         #endif
-    } else if(setsockopt(ServerSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &SocketOptions, sizeof(SocketOptions))) {
+    } else if(setsockopt(Srv_ServerSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &Srv_SocketOptions, sizeof(Srv_SocketOptions))) {
         SrvStatus |= ERR_SOCKET_OPTIONS;
         #if (USE_DEBUG == 1)
         dbMessage("Server socket options error!", true);
         #endif
     }
-    Server_addr.sin_family = AF_INET;
-    Server_addr.sin_addr.s_addr = INADDR_ANY;
-    Server_addr.sin_port = ServerPort;
+    Srv_Server_addr.sin_family = AF_INET;
+    Srv_Server_addr.sin_addr.s_addr = INADDR_ANY;
+    Srv_Server_addr.sin_port = Srv_ServerPort;
 
-    memset(buffer, 0, sizeof(buffer));
-    isRunning = false;
+    memset(Srv_buffer, 0, sizeof(Srv_buffer));
+    Srv_isRunning = false;
 }
 
-Server::~Server()
+//Server::~Server()
+void Server_Close()
 {
-    close(ClientSocket);
-    close(ServerSocket);
-    MessagesIn = {};
-    MessagesOut = {};
+    close(Srv_ClientSocket);
+    close(Srv_ServerSocket);
+    Srv_MessagesIn = {};
+    Srv_MessagesOut = {};
 }
 
-int Server::Start(const int port)
+//int Server::Start(const int port)
+int Server_Start(const int port)
 {
-    ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (ServerSocket < 0) {
+    Srv_ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (Srv_ServerSocket < 0) {
         SrvStatus |= ERR_OPEN_SOCKET;
         //Error opening socket
-        return ServerSocket;
+        return Srv_ServerSocket;
     }
     SrvStatus &= ~(ERR_OPEN_SOCKET);
-    explicit_bzero((char *) &Server_addr, sizeof(Server_addr));
-    ServerPort = port;
+    explicit_bzero((char *) &Srv_Server_addr, sizeof(Srv_Server_addr));
+    Srv_ServerPort = port;
 
     // Forcefully attaching socket to the port 8080
-    if (bind(ServerSocket, (struct sockaddr *)&Server_addr, sizeof(Server_addr)) < 0) {
+    if (bind(Srv_ServerSocket, (struct sockaddr *)&Srv_Server_addr, sizeof(Srv_Server_addr)) < 0) {
         SrvStatus |= ERR_BINDING;
         return -1;
     }
 
-    if (listen(ServerSocket, 3) < 0) {
+    if (listen(Srv_ServerSocket, 3) < 0) {
         SrvStatus |= ERR_LISTEN;
         return -1;
     }
 
-    if ((ClientSocket = accept(ServerSocket, (struct sockaddr *)&Server_addr, (socklen_t*)&addrlen)) < 0) {
+    if ((Srv_ClientSocket = accept(Srv_ServerSocket, (struct sockaddr *)&Srv_Server_addr, (socklen_t*)&Srv_addrlen)) < 0) {
         SrvStatus |= ERR_ACCEPTING;
         return -1;
     }
 
-    isRunning = true;
-    //std::thread srv(Serving);
-    srv = std::thread(&Server::Serving, this);
+    Srv_isRunning = true;
+    std::thread Server_srv(Server_Serving, 60000);
+    //srv = std::thread(&Serving, this);
     return 0;
 }
 
-int Server::Stop()
+//int Server::Stop()
+int Server_Stop()
 {
-    //std::thread srv.join();
-    close(ClientSocket);
-    isRunning = false;
+    close(Srv_ClientSocket);
+    Srv_isRunning = false;
     return 0;
 }
 
-int Server::PutMessage(const str text, const uint16_t flags)
+//int Server::PutMessage(const str text, const uint16_t flags)
+int Server_PutMessage(const str text, const uint16_t flags)
 {
     sMsg temp_msg;
     temp_msg.sMessage = text;
-    temp_msg.id = message_id++;
+    temp_msg.id = Srv_message_id++;
     temp_msg.status = flags;
-    MessagesOut.push_back(temp_msg);
+    Srv_MessagesOut.push_back(temp_msg);
     return 0;
 }
 
-bool Server::GetMessage(str& text)
+//bool Server::GetMessage(str& text)
+bool Server_GetMessage(str& text)
 {
     uint16_t tst;
-    if(MessagesIn.empty()) {
+    if(Srv_MessagesIn.empty()) {
         return false;
     } else {
-        text = MessagesIn[0].sMessage;
+        text = Srv_MessagesIn[0].sMessage;
         //MessagesIn[0].id;
-        tst = MessagesIn[0].status;
+        tst = Srv_MessagesIn[0].status;
         if((tst & RESYNCH_GAMETABLE) > 0) {
             //We get other sides gametable to overwrite this ones
             //if(game::boardSize)
@@ -154,12 +176,13 @@ bool Server::GetMessage(str& text)
             std::cout << "Move " << text << std::endl;
         }
 
-        MessagesIn.erase(MessagesIn.begin());
+        Srv_MessagesIn.erase(Srv_MessagesIn.begin());
         return true;
     }
 }
 
-uint16_t Server::GetServerStatus()
+//uint16_t Server::GetServerStatus()
+uint16_t GetServerStatus()
 {
     return SrvStatus;
 }
@@ -167,36 +190,37 @@ uint16_t Server::GetServerStatus()
 /*
  * Message thread
  */
-void Server::Serving()
+//void Server::Serving()
+void Server_Serving(uint16_t KillTime)
 {
     sMsg temp;
     uint32_t KillSwitch;
 
     KillSwitch = 0;
     std::cout << "Server thread ID=" << std::this_thread::get_id() << std::endl;
-    while (isRunning)
+    while (Srv_isRunning)
     {
-        ValRead = read(ClientSocket, buffer, 1024);
-        if(ValRead < 0) {
+        Srv_ValRead = read(Srv_ClientSocket, Srv_buffer, 1024);
+        if(Srv_ValRead < 0) {
             std::cout << "Error reading socket!" << std::endl;
         } else {
-            std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(buffer));
-            MessagesIn.push_back(temp);
+            std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
+            Srv_MessagesIn.push_back(temp);
             KillSwitch = 0;
         }
 
-        if(!MessagesOut.empty()) {
-            temp = MessagesOut[0];
-            MessagesOut.erase(MessagesOut.begin());
-            memcpy(buffer, (const unsigned char*)&temp, sizeof(temp));
-            send(ClientSocket, buffer, strlen(buffer), 0);
+        if(!Srv_MessagesOut.empty()) {
+            temp = Srv_MessagesOut[0];
+            Srv_MessagesOut.erase(Srv_MessagesOut.begin());
+            memcpy(Srv_buffer, (const unsigned char*)&temp, sizeof(temp));
+            send(Srv_ClientSocket, Srv_buffer, strlen(Srv_buffer), 0);
             KillSwitch = 0;
         }
         std::this_thread::sleep_for(1s);
 
         //We don't want this run eternity here, so what kind time is long enough?
         ++KillSwitch;
-        if(KillSwitch > 60000)
+        if(KillSwitch > KillTime)
             break;
     }
 

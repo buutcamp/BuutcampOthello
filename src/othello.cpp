@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.20
+ * ver 0.25
  */
 
 #include "othello.h"
@@ -9,15 +9,15 @@
 std::string txt;
 #endif
 
-std::string ver_txt = "ver 0.20";
+std::string ver_txt = "ver 0.25";
 
 //Client and server
-#ifdef SERVER_MODULE_IN_USE
-class Server server();
-#endif
-#ifdef CLIENT_MODULE_IN_USE
-class Client client();
-#endif
+//#ifdef SERVER_MODULE_IN_USE
+//class Server server();
+//#endif
+//#ifdef CLIENT_MODULE_IN_USE
+//class Client client();
+//#endif
 
 
 Game::Game(int diskColor) :
@@ -126,6 +126,8 @@ void Game::OthelloInit()
     /*
      * Server initialize and start listening
      */
+    Server_Initialize();
+    Server_Start(PORT);
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
@@ -178,7 +180,9 @@ void Game::OnTileClicked(int x, int y)
             //Make message from click position
             txt = std::to_string(x) + "," + std::to_string(y);
             //client.PutMessage(txt, flags);
+            Client_PutMessage(txt, flags);
             //server.PutMessage(txt, flags);
+            Server_PutMessage(txt, flags);
 
             /*
              * Test if now turn for AI or remote

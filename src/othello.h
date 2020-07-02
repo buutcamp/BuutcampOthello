@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.20
+ * ver 0.25
  */
 #include <iostream>
 
@@ -18,16 +18,18 @@
 #include <string>
 #include <vector>
 #include "definet.h"
+#include "client.h"     //Not class, just subroutine
+#include "server.h"     //Not class, just subroutine
 
 
 
-#ifdef SERVER_MODULE_IN_USE
-#include "server.h"
-#endif
+//#ifdef SERVER_MODULE_IN_USE
+//#include "server.h"
+//#endif
 
-#ifdef CLIENT_MODULE_IN_USE
-#include "client.h"
-#endif
+//#ifdef CLIENT_MODULE_IN_USE
+//#include "client.h"
+//#endif
 
 /*
  * 
