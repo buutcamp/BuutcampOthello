@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.20
+ * ver 0.25
  */
 
 #include "othello.h"
@@ -9,17 +9,25 @@
 std::string txt;
 #endif
 
-std::string ver_txt = "ver 0.20";      
+std::string ver_txt = "ver 0.25";
+
+//Client and server
+//#ifdef SERVER_MODULE_IN_USE
+//class Server server();
+//#endif
+//#ifdef CLIENT_MODULE_IN_USE
+//class Client client();
+//#endif
 
 
-Game::Game(int diskColor) : 
-            diskRadius(29), 
-            tileSize(64),   
-            boardTiles(BOARD_TILES), 
+Game::Game(int diskColor) :
+            diskRadius(29),
+            tileSize(64),
+            boardTiles(BOARD_TILES),
             GameBoard{{0}},
-            tileSpacing(2), 
+            tileSpacing(2),
             boardSize(boardTiles * tileSize),
-            buttonColor(ImColor(0.10f, 0.5f, 0.20f)), 
+            buttonColor(ImColor(0.10f, 0.5f, 0.20f)),
             buttonHoverColor(ImColor(0.10f, 0.3f, 0.251)),
             buttonActiveColor(ImColor( 0.0f, 0.7f, 0.0f)),
             boardColor(ImColor(.30f, 0.30f, 0.30f)),
@@ -36,6 +44,7 @@ Game::Game(int diskColor) :
             reset_game(false),
             boardSizeChanged(false),
             showHint(true),
+            LocalLock(false),
             game_over(false),
             pass_turn(false)
             {
@@ -96,7 +105,7 @@ void Game::OthelloInit()
     CurrentDiskColor = Black; // Player with Black discs begin game
     if (showHint)
         UpdateHintMask();
-    
+
     // adjusts the spacing between buttons
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing, tileSpacing));
 
@@ -109,12 +118,21 @@ void Game::OthelloInit()
     style.WindowBorderSize = 0.0f;
     style.WindowRounding = 0.0f;
     style.WindowPadding = ImVec2(200, 30);// padding within the window
+
+    /*
+     * Client initialize and connect to server
+     */
+
+    /*
+     * Server initialize and start listening
+     */
+    Server_Initialize();
+    Server_Start(PORT);
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
 void Game::OthelloFrame(float deltaTime)
 {
-    
 }
 
 // called when a tile was clicked
@@ -125,7 +143,19 @@ void Game::OnTileClicked(int x, int y)
     dbMessage(txt, true);
     #endif
 
+    str txt;
+    uint16_t flags;
     static int discs_counter = 4; // total number of discs placed on the board
+
+    /*
+     * 1st test if valid to make move
+     * if (LocalLock == true) {
+     *     if we are here from local player => exit
+     * }
+     * AI and remote games must lock local player out
+     * until they have moves made
+     */
+
     //Game mask update
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
@@ -142,6 +172,24 @@ void Game::OnTileClicked(int x, int y)
                 scoreWhite -= TestPosition(x, y);
                 playerTurn = White;
             }
+
+            //Set flags, who send this move
+            flags = 0;
+            //flags |= AI_MOVE;
+            //flags |= HUMAN_MOVE;
+            //Make message from click position
+            txt = std::to_string(x) + "," + std::to_string(y);
+            //client.PutMessage(txt, flags);
+            Client_PutMessage(txt, flags);
+            //server.PutMessage(txt, flags);
+            Server_PutMessage(txt, flags);
+
+            /*
+             * Test if now turn for AI or remote
+             * if so, LocalLock = true;
+             * else LocalLock = false;
+             */
+
             GameBoard[x][y] = CurrentDiskColor;
             FlipDisks(x, y);
             ++discs_counter;
@@ -149,20 +197,20 @@ void Game::OnTileClicked(int x, int y)
             {
                 game_over = true;
                 discs_counter = 4;
-            } 
+            }
 
             if(CurrentDiskColor == White)
                 CurrentDiskColor = Black;
             else
-                CurrentDiskColor = White; 
+                CurrentDiskColor = White;
             if (showHint)
                 UpdateHintMask();
-        }  
+        }
         else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
         {
            game_over = true;
            discs_counter = 4;
-        }     
+        }
     }
 }
 
@@ -190,19 +238,19 @@ void Game::OthelloRender(int width, int height)
     // creates a window with no visible frames
     ImGui::Begin("Othello ", nullptr, ImGuiWindowFlags_NoDecoration);
     {
-        ImDrawList* drawList = ImGui::GetWindowDrawList(); 
-       
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
         // draw score discs
         drawList->AddCircleFilled(ImVec2(320, 30), diskRadius * 0.75, diskColorWhite, 30);
         drawList->AddCircleFilled(ImVec2(640, 30), diskRadius * 0.75, diskColorBlack, 30);
 
-        ImGui::Dummy(ImVec2(300,45)); 
+        ImGui::Dummy(ImVec2(300,45));
         ImGui::Spacing();
         ImGui::SameLine(315, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "%02d", scoreWhite);
         ImGui::SameLine(635, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "%02d", scoreBlack);
-        
+
         //Draw player turn disc
         ImGui::SameLine(420, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "TURN");
@@ -214,10 +262,10 @@ void Game::OthelloRender(int width, int height)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
         }
-        
-        ImGui::NewLine();     
+
+        ImGui::NewLine();
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
-        ImGui::Dummy(ImVec2(0,-1));  
+        ImGui::Dummy(ImVec2(0,-1));
         // draw the buttons
         for (int y = 0; y < boardTiles; ++y)
         {
@@ -286,27 +334,27 @@ void Game::OthelloRender(int width, int height)
             dbMessage(txt, true);
             #endif
 
-        }        
+        }
         //draw combo dropbox
         static int item = 0;
         int current_item = item;
         const char* items[] = {"8x8", "10x10", "12x12"};
-       
+
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
         ImGui::PushItemWidth(100);
         ImGui::SameLine(230, 0);
-        ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items)); 
+        ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
        if(current_item != item)
         {
             switch(item)
              {
-                case 0: 
+                case 0:
                     current_item = 0;
                     boardTiles = BOARD_TILES;
                     break;
-                case 1: 
+                case 1:
                     current_item = 1;
                     boardTiles = BOARD_TILES + 2;
                     break;
@@ -324,8 +372,8 @@ void Game::OthelloRender(int width, int height)
                 HintMask.resize(boardTiles,std::vector<int>(boardTiles));
             }
         }
-        
-        // Draw Reset button  
+
+        // Draw Reset button
          ImGui::SameLine(450, 0);
         if(ImGui::Button("RESET"))
         {
@@ -485,7 +533,7 @@ void Game::UpdateHintMask(void)
     {
         passed_gameTurn_counter = 0;
     }
-    
+
 }
 
 void Game::update()
@@ -507,7 +555,7 @@ void Game::update()
 
     OthelloFrame(deltaTime);
     OthelloRender(width, height);
-        
+
     // let imgui handle rest of the rendering process
     ImGui::Render();
 
@@ -528,6 +576,10 @@ bool Game::resetGame()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
+        /*
+         * Send message to other player if not local game
+         * Update new gameboard to remote site
+         */
         return true;
     }
     return false;
@@ -541,6 +593,10 @@ bool Game::changeBoardsize()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
+        /*
+         * Send message to other player if not local game
+         * Update new gameboard to remote site
+         */
         return true;
     }
     return false;
@@ -565,11 +621,11 @@ bool Game::gameOver()
         else if(scoreBlack == scoreWhite)
         {
             std::cout << "Draw, No winner!" << "\n";
-        }  
+        }
         else
         {
             std::cout << "Winner is White!" << "\n";
-        }  
+        }
         return true;
     }
     return false;
@@ -598,6 +654,9 @@ bool Game::gameRunning()
 
 void Game::clean()
 {
+    /*
+     * Shut down possible client or server!
+     */
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui::DestroyContext();
@@ -625,10 +684,10 @@ void Game::updatePlayerTurn()
             playerTurn = White;
             CurrentDiskColor = White;
         }
-        
+
         pass_turn = false;
     }
-    
+
 }
 
 #if (USE_DEBUG == 1)
@@ -639,4 +698,3 @@ void dbMessage(const std::string &s, bool crlf)
         std::cout << std::endl;
 }
 #endif
-
