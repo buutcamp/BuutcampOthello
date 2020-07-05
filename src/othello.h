@@ -21,26 +21,19 @@
 #include "client.h"     //Not class, just subroutine
 #include "server.h"     //Not class, just subroutine
 
-
-
-//#ifdef SERVER_MODULE_IN_USE
-//#include "server.h"
-//#endif
-
-//#ifdef CLIENT_MODULE_IN_USE
-//#include "client.h"
-//#endif
-
 /*
  * 
  */
 
 enum pcs {Empty, White, Black, Hint};
 enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
+enum game_style {LocalGame, ClientGame, ServerGame};
 
 class Game {
+    Server server;
+    Client client;
     public:
-        Game(int disk_color);
+        Game(int disk_color, int game_style);
         ~Game();
 
         void OthelloInit();
@@ -69,6 +62,7 @@ class Game {
     private:
         const int diskRadius;
         const int tileSize;
+        const int GameStyle;
 
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
@@ -102,7 +96,6 @@ class Game {
 };
 
 #if (USE_DEBUG == 1)
-#include <iostream>
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
 

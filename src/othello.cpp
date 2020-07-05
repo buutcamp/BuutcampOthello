@@ -11,16 +11,8 @@ std::string txt;
 
 std::string ver_txt = "ver 0.25";
 
-//Client and server
-//#ifdef SERVER_MODULE_IN_USE
-//class Server server();
-//#endif
-//#ifdef CLIENT_MODULE_IN_USE
-//class Client client();
-//#endif
-
-
-Game::Game(int diskColor) :
+Game::Game(int diskColor, int game_style) :
+            GameStyle(game_style),
             diskRadius(29),
             tileSize(64),
             boardTiles(BOARD_TILES),
@@ -50,6 +42,8 @@ Game::Game(int diskColor) :
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
+                client;
+                server;
             }
 
 Game::~Game() {}
@@ -122,17 +116,34 @@ void Game::OthelloInit()
     /*
      * Client initialize and connect to server
      */
+    if(GameStyle == ClientGame) {
+        if(client.Client_Connect() == 0) {
+            //Client connected
+            std::cout << "Client found server." << std::endl;
+        } else {
+            //Could not connect to server!
+            std::cout << "Couldn't connect to server!" << std::endl;
+        }
+    }
 
     /*
      * Server initialize and start listening
      */
-    Server_Initialize();
-    Server_Start(PORT);
+    if(GameStyle == ServerGame) {
+        //if(server.Server_Start(PORT) == 0) {
+        //    //Server started and listening
+        //    std::cout << "Server is listening port:" << PORT << std::endl;
+        //} else {
+        //    //Could not start server!
+        //    std::cout << "Couldn't start server!" << std::endl;
+        //}
+    }
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
 void Game::OthelloFrame(float deltaTime)
 {
+    //std::cout << "Delta frame:" << deltaTime << std::endl;
 }
 
 // called when a tile was clicked
@@ -173,17 +184,30 @@ void Game::OnTileClicked(int x, int y)
                 playerTurn = White;
             }
 
-            //Set flags, who send this move
-            flags = 0;
-            //flags |= AI_MOVE;
-            //flags |= HUMAN_MOVE;
-            //Make message from click position
-            txt = std::to_string(x) + "," + std::to_string(y);
-            //client.PutMessage(txt, flags);
-            Client_PutMessage(txt, flags);
-            //server.PutMessage(txt, flags);
-            Server_PutMessage(txt, flags);
+            if(GameStyle == ClientGame) {
+                //Set flags, who send this move
+                flags = 0;
+                //flags |= AI_MOVE;
+                //flags |= HUMAN_MOVE;
+                //Make message from click position
+                txt = std::to_string(x) + "," + std::to_string(y);
+                //client.PutMessage(txt, flags);
+                client.Client_send(txt, flags);
+            }
+            if(GameStyle == ServerGame) {
+                //Set flags, who send this move
+                flags = 0;
+                //flags |= AI_MOVE;
+                //flags |= HUMAN_MOVE;
+                //Make message from click position
+                txt = std::to_string(x) + "," + std::to_string(y);
+                //server.PutMessage(txt, flags);
+                server.Server_send(txt, flags);
+            }
 
+            if(GameStyle == LocalGame) {
+                //Local game
+            }
             /*
              * Test if now turn for AI or remote
              * if so, LocalLock = true;
@@ -346,30 +370,32 @@ void Game::OthelloRender(int width, int height)
         ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
-       if(current_item != item)
+        if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
+        if(current_item != item)
         {
             switch(item)
-             {
-                case 0:
-                    current_item = 0;
-                    boardTiles = BOARD_TILES;
-                    break;
-                case 1:
-                    current_item = 1;
-                    boardTiles = BOARD_TILES + 2;
-                    break;
-                case 2:
-                    current_item = 2;
-                    boardTiles = BOARD_TILES + 4;
-                    break;
-             }
-             boardSizeChanged = true;
-             GameBoard.clear();
-             GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-            if (showHint)
             {
-                HintMask.clear();
-                HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                    case 0:
+                        current_item = 0;
+                        boardTiles = BOARD_TILES;
+                        break;
+                    case 1:
+                        current_item = 1;
+                        boardTiles = BOARD_TILES + 2;
+                        break;
+                    case 2:
+                        current_item = 2;
+                        boardTiles = BOARD_TILES + 4;
+                        break;
+                }
+                boardSizeChanged = true;
+                GameBoard.clear();
+                GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+                if (showHint)
+                {
+                    HintMask.clear();
+                    HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                }
             }
         }
 
@@ -576,10 +602,12 @@ bool Game::resetGame()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
-        /*
-         * Send message to other player if not local game
-         * Update new gameboard to remote site
-         */
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -593,10 +621,12 @@ bool Game::changeBoardsize()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
-        /*
-         * Send message to other player if not local game
-         * Update new gameboard to remote site
-         */
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -657,6 +687,12 @@ void Game::clean()
     /*
      * Shut down possible client or server!
      */
+    if(GameStyle == ClientGame) {
+        client.Client_Disconnect();
+    }
+    if(GameStyle == ServerGame) {
+        server.Server_Stop();
+    }
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui::DestroyContext();

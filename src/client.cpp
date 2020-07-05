@@ -2,10 +2,11 @@
  * Client
  * client.cpp
  * ver 0.20     //1st include to project
- * ver 0.25     //change from class to subroutine
+ * ver 0.25     //Client will be subclass for class Game
  */
 
-#include "client.h"
+#include "othello.h"
+//#include "client.h"
 
 /*
  * Client Socket
@@ -19,22 +20,8 @@
  */
 
 using namespace std::literals::chrono_literals;
-//ver 0.25
-int Cl_message_id;
-std::vector<cMsg> Cl_MessagesIn;
-std::vector<cMsg> Cl_MessagesOut;
-struct sockaddr_in Cl_Server_addr;
-struct sockaddr_in Cl_Client_addr;
-int Cl_ServerSocket = 0;
-int Cl_ValRead = 0;
-int Cl_ServerPort = 8080;
-uint16_t ClStatus;
-bool Cl_isConnected;
-char Cl_buffer[1024];
-std::thread Cl_srv;
 
-//Client::Client(/* args */)
-void Client_Initialize()
+Client::Client()
 {
     Cl_MessagesIn = {};
     Cl_MessagesOut = {};
@@ -50,6 +37,8 @@ void Client_Initialize()
         #if (USE_DEBUG == 1)
         dbMessage("Can't create Server socket!", true);
         #endif
+    } else {
+        std::cout << "Client socket:" << Cl_ServerSocket << std::endl;
     }
 
     Cl_Server_addr.sin_family = AF_INET;
@@ -61,48 +50,51 @@ void Client_Initialize()
         #if (USE_DEBUG == 1)
         dbMessage("Invalid address/ Address not supported", true);
         #endif
+    } else {
+        std::cout << "Client have server address." << std::endl;
     }
 
     memset(Cl_buffer, 0, sizeof(Cl_buffer));
     Cl_isConnected = false;
 }
 
-//Client::~Client()
-void Client_Close()
+Client::~Client()
 {
+    std::cout << "Close client." << std::endl;
     Client_Disconnect();
     Cl_MessagesIn = {};
     Cl_MessagesOut = {};
 }
 
-//int Client::Connect()
-int  Client_Connect()
+int Client::Client_Connect()
 {
     if (connect(Cl_ServerSocket, (struct sockaddr *)&Cl_Server_addr, sizeof(Cl_Server_addr)) < 0) {
         ClStatus |= ERR_CONNECTING;
         Cl_isConnected = false;
+        std::cout << "Client couln't connect!" << std::endl;
         return -1;
     } else {
         ClStatus &= ~(ERR_CONNECTING);
         Cl_isConnected = true;
-        std::thread Cl_srv(Client_Serving, 60000);
-        //srv = std::thread(&Client::Serving, this);
+        //std::thread Cl_srv(Client_Serving, 60000);
+        std::cout << "Client connected to server." << std::endl;
+        Cl_srv = std::thread(&Client::Client_Serving, this);
         return 0;
     }
 }
 
-//int Client::Disconnect()
-int  Client_Disconnect()
+int Client::Client_Disconnect()
 {
+    std::cout << "Client disconnect." << std::endl;
     close(Cl_ServerSocket);
     Cl_isConnected = false;
     return 0;
 }
 
-//int Client::PutMessage(const str text, const uint16_t flags)
-int Client_PutMessage(const str text, const uint16_t flags)
+int Client::Client_send(const str text, const uint16_t flags)
 {
     cMsg temp_msg;
+    std::cout << "Client send message [" << text << "] flags:" << flags << std::endl;
     temp_msg.cMessage = text;
     temp_msg.id = Cl_message_id++;
     temp_msg.status = flags;
@@ -110,16 +102,23 @@ int Client_PutMessage(const str text, const uint16_t flags)
     return 0;
 }
 
-//bool Client::GetMessage(str& text)
-bool Client_GetMessage(str& text)
+bool Client::Client_recv(str& text)
 {
     uint16_t tst;
+    int x = 0;
+    int y = 0;
     if(Cl_MessagesIn.empty()) {
+        std::cout << "Client message buffer empty." << std::endl;
         return false;
     } else {
         text = Cl_MessagesIn[0].cMessage;
         //Cl_MessagesIn[0].id;
         tst = Cl_MessagesIn[0].status;
+        std::cout << "Client got new message [" << text << "] flags:" << tst << "ID:" << Cl_MessagesIn[0].id << std::endl;
+        if((tst & GAME_COMMAND) > 0) {
+            //Game command
+            std::cout << "Game command [" << text << "] ID:" << Cl_MessagesIn[0].id << std::endl;
+        }
         if((tst & AI_FLAG) > 0) {
             //Where AI want this message to sended?
             std::cout << "AI message: " << text << std::endl;
@@ -128,6 +127,7 @@ bool Client_GetMessage(str& text)
             //Use this, if AI-moves are handled diffrrently from humans moves
             //Check move data and call 'Game::OnTileClicked(int x, int y)'
             std::cout << "AI move " << text << std::endl;
+            game->OnTileClicked(x, y);
         }
         if((tst & CHAT_TEXT) > 0) {
             //Where we print chat-text?
@@ -137,6 +137,7 @@ bool Client_GetMessage(str& text)
             //Use this, if humans moves are handled diffrrently from AI-moves
             //Check move data and call 'Game::OnTileClicked(int x, int y)'
             std::cout << "Human move " << text << std::endl;
+            game->OnTileClicked(x, y);
         }
         if((tst & (AI_MOVE | HUMAN_MOVE)) > 0) {
             //Use this if human and AI move handling are not different
@@ -149,8 +150,7 @@ bool Client_GetMessage(str& text)
     }
 }
 
-//uint16_t Client::GetClientStatus()
-uint16_t GetClientStatus()
+uint16_t Client::GetClientStatus()
 {
     return ClStatus;
 }
@@ -158,9 +158,10 @@ uint16_t GetClientStatus()
 /*
  * Message thread
  */
-//void Client::Serving()
-void Client_Serving(uint16_t KillTime)
+//void Client::Client_Serving(uint16_t KillTime)
+void Client::Client_Serving()
 {
+    uint16_t KillTime = 60000;
     cMsg temp;
     uint32_t KillSwitch;
 
