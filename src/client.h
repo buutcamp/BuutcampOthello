@@ -40,10 +40,11 @@ class Client {
         int  Client_Connect();
         int  Client_Disconnect();
         int  Client_send(const str text, const uint16_t flags);
-        bool Client_recv(str& text);
+        bool Client_recv(str& text, uint16_t& flags);
         uint16_t GetClientStatus();
         //void Client_Serving(uint16_t KillTime);
         void Client_Serving();
+        int cMsg_size = sizeof(cMsg);
     private:
         //Messages
         struct cMsg {

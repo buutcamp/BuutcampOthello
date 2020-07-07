@@ -40,10 +40,11 @@ class Server {
         int  Server_Start(const int port);
         int  Server_Stop();
         int  Server_send(const str text, const uint16_t flags);
-        bool Server_recv(str& text);
+        bool Server_recv(str& text, uint16_t& flags);
         uint16_t GetServerStatus();
         //void Server_Serving(uint16_t KillTime);
         void Server_Serving();
+        int sMsg_size = sizeof(sMsg);
     private:
         //Messages
         struct sMsg {

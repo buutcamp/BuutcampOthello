@@ -102,7 +102,8 @@ int Server::Server_Start(const int port)
 
 int Server::Server_Stop()
 {
-    close(Srv_ClientSocket);
+    int close_ret = close(Srv_ClientSocket);
+    std::cout << "Server closed. Return val:" << close_ret << std::endl;
     Srv_isRunning = false;
     return 0;
 }
@@ -117,51 +118,20 @@ int Server::Server_send(const str text, const uint16_t flags)
     return 0;
 }
 
-bool Server::Server_recv(str& text)
+bool Server::Server_recv(str& text, uint16_t& flags)
 {
-    uint16_t tst;
-    int x = 0;
-    int y = 0;
     if(Srv_MessagesIn.empty()) {
         return false;
     } else {
         text = Srv_MessagesIn[0].sMessage;
         //MessagesIn[0].id;
-        tst = Srv_MessagesIn[0].status;
-        if((tst & RESYNCH_GAMETABLE) > 0) {
-            //We get other sides gametable to overwrite this ones
-            //if(game::boardSize)
-        }
-        if((tst & (AI_ILLEGAL_MOVE | HUMAN_ILLEGAL_MOVE)) > 0) {
-            //Illegal move, we must synch game tables
-            std::cout << "AI made illegal move! " << text << std::endl;
-        }
-        if((tst & AI_FLAG) > 0) {
-            //Where AI want this message to sended?
-            std::cout << "AI message: " << text << std::endl;
-        }
-        if((tst & AI_MOVE) > 0) {
-            //Use this, if AI-moves are handled diffrrently from humans moves
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "AI move " << text << std::endl;
-            game->OnTileClicked(x, y);
-        }
-        if((tst & CHAT_TEXT) > 0) {
-            //Where we print chat-text?
-            std::cout << "Chat [" << text << "]." << std::endl;
-        }
-        if((tst & HUMAN_MOVE) > 0) {
-            //Use this, if humans moves are handled diffrrently from AI-moves
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "Human move " << text << std::endl;
-            game->OnTileClicked(x, y);
-        }
-        if((tst & (AI_MOVE | HUMAN_MOVE)) > 0) {
-            //Use this if human and AI move handling are not different
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "Move " << text << std::endl;
-        }
+        flags = Srv_MessagesIn[0].status;
 
+        std::cout << "Server got new message [" << Srv_MessagesIn[0].sMessage <<
+            "] flags:" << Srv_MessagesIn[0].status <<
+            "ID:" << Srv_MessagesIn[0].id << std::endl;
+
+        //Remove oldest in FIFO
         Srv_MessagesIn.erase(Srv_MessagesIn.begin());
         return true;
     }
@@ -190,7 +160,8 @@ void Server::Server_Serving()
         if(Srv_ValRead < 0) {
             std::cout << "Error reading socket!" << std::endl;
         } else {
-            std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
+            //std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
+            memcpy(&temp, Srv_buffer, sMsg_size);
             Srv_MessagesIn.push_back(temp);
             KillSwitch = 0;
         }
@@ -198,7 +169,7 @@ void Server::Server_Serving()
         if(!Srv_MessagesOut.empty()) {
             temp = Srv_MessagesOut[0];
             Srv_MessagesOut.erase(Srv_MessagesOut.begin());
-            memcpy(Srv_buffer, (const unsigned char*)&temp, sizeof(temp));
+            memcpy(Srv_buffer, (const unsigned char*)&temp, sMsg_size);
             send(Srv_ClientSocket, Srv_buffer, strlen(Srv_buffer), 0);
             KillSwitch = 0;
         }

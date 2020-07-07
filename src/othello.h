@@ -58,6 +58,8 @@ class Game {
         void FlipDisks(const int x, const int y);
         void UpdateHintMask(void);
         bool LocalLock;
+        std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
+        std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
         const int diskRadius;
@@ -90,6 +92,9 @@ class Game {
         bool showHint;
         bool game_over;
         bool pass_turn;
+
+        void HandleRemoteMessages();
+        int ParseMoveString(const str text, int& x, int& y);
 
         SDL_Window* window;
         SDL_GLContext gl_context;

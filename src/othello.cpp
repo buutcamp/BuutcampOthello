@@ -42,8 +42,10 @@ Game::Game(int diskColor, int game_style) :
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
-                client;
-                server;
+                if(game_style == ClientGame)
+                    client;
+                if(game_style == ServerGame)
+                    server;
             }
 
 Game::~Game() {}
@@ -188,7 +190,7 @@ void Game::OnTileClicked(int x, int y)
                 //Set flags, who send this move
                 flags = 0;
                 //flags |= AI_MOVE;
-                //flags |= HUMAN_MOVE;
+                flags |= HUMAN_MOVE;
                 //Make message from click position
                 txt = std::to_string(x) + "," + std::to_string(y);
                 //client.PutMessage(txt, flags);
@@ -198,7 +200,7 @@ void Game::OnTileClicked(int x, int y)
                 //Set flags, who send this move
                 flags = 0;
                 //flags |= AI_MOVE;
-                //flags |= HUMAN_MOVE;
+                flags |= HUMAN_MOVE;
                 //Make message from click position
                 txt = std::to_string(x) + "," + std::to_string(y);
                 //server.PutMessage(txt, flags);
@@ -724,6 +726,187 @@ void Game::updatePlayerTurn()
         pass_turn = false;
     }
 
+}
+
+void Game::HandleRemoteMessages()
+{
+    uint16_t flags = 0;
+    str text = "";
+    int x = 0;
+    int y = 0;
+    bool new_msg = false;
+
+    //Messages from game master server
+    if(client.Client_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    //Messages from remote player, which is client
+    if(server.Server_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    if(new_msg == false)
+        return;
+
+    /*
+     * All messages are handled here
+     */
+    std::cout << "" << std::endl;
+    if((flags & GAME_COMMAND) > 0) {
+        //Game command
+        std::cout << "Game command [" << text << "]" << std::endl;
+        if(text == CMND_REST_GAME) {
+            //Game master calls reset the game
+            std::cout << "Game master reset game!" << std::endl;
+        } else if(text == CMND_INIT_8X8) {
+            //Set board to 8 x 8 mode
+            std::cout << "Board set to 8x8" << std::endl;
+        } else if( text == CMND_INIT_10X10) {
+            //Set board to 10 x 10 mode
+            std::cout << "Board set to 10x10" << std::endl;
+        } else if( text == CMND_INIT_12X12) {
+            //Set board to 12 x 12 mode
+            std::cout << "Board set to 12x12" << std::endl;
+        } else if( text == CMND_P1_LOCAL) {
+            //Set player 1 as local
+            std::cout << "Player 1 is local player" << std::endl;
+        } else if( text == CMND_P1_REMOTE) {
+            //Set player 1 as remote
+            std::cout << "Player 1 is remote player" << std::endl;
+        } else if( text == CMND_P1_HUMAN) {
+            //Set player 1 as human
+            std::cout << "Player 1 is human" << std::endl;
+        } else if( text == CMND_P1_AI) {
+            //Set player 1 as AI
+            std::cout << "Player 1 is AI" << std::endl;
+        } else if( text == CMND_P2_LOCAL) {
+            //Set player 2 as local
+            std::cout << "Player 2 is local player" << std::endl;
+        } else if( text == CMND_P2_REMOTE) {
+            //Set player 2 as remote
+            std::cout << "Player 2 is remote player" << std::endl;
+        } else if( text == CMND_P2_HUMAN) {
+            //Set player 2 as human
+            std::cout << "Player 2 is human" << std::endl;
+        } else if( text == CMND_P2_AI) {
+            //Set player 2 as AI
+            std::cout << "Player 2 is AI" << std::endl;
+        } else {
+            //Unknown command!
+            std::cout << "ERROR! Unknown command [" << text << "]" << std::endl;
+        }
+        return;
+    }
+
+    if((flags & AI_FLAG) > 0) {
+        //Where AI want this message to sended?
+        std::cout << "AI message: " << text << std::endl;
+        //What we do with this in this state of game?
+        return;
+    }
+
+    //if((flags & AI_MOVE) > 0) {
+    //    //Use this, if AI-moves are handled diffrrently from humans moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "AI move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    //if((flags & HUMAN_MOVE) > 0) {
+    //    //Use this, if humans moves are handled diffrrently from AI-moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "Human move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    if((flags & (AI_MOVE | HUMAN_MOVE)) > 0) {
+        //Use this if human and AI move handling are not different
+        //Check move data and call 'Game::OnTileClicked(int x, int y)'
+        if(ParseMoveString(text, x, y) == 0) {
+            std::cout << "Move " << text << std::endl;
+            OnTileClicked(x, y);
+        } else {
+            std::cout << "Move data " << text << " was illegal!" << std::endl;
+            //How we handle illegal move?
+            //Other than send message of illegal move (HUMAN_ILLEGAL_MOVE or AI_ILLEGAL_MOVE)
+        }
+        return;
+    }
+    if((flags & (AI_ILLEGAL_MOVE | HUMAN_ILLEGAL_MOVE)) > 0) {
+        //Illegal move, we must synch game tables
+        std::cout << "AI or human made illegal move! " << text << std::endl;
+        //How we handle illegal move and move history?
+        return;
+    }
+
+    if((flags & CHAT_TEXT) > 0) {
+        //Where we print chat-text?
+        std::cout << "Chat [" << text << "]." << std::endl;
+        //Send text to textbox
+        return;
+    }
+
+    if((flags & RESYNCH_GAMETABLE) > 0) {
+        //We get other sides gametable to overwrite this ones
+        std::cout << "Gameboard resynch, we write GameBoard with following data: " << text << std::endl;
+        return;
+    }
+
+    if((flags & HUMAN_SOMETHING) > 0) {
+        //For future use of human players message
+        std::cout << "Messagetype HUMAN_SOMETHING, text:" << text << std::endl;
+        return;
+    }
+
+    if((flags & AI_SOMETHING) > 0) {
+        //For future use of AI players message
+        std::cout << "Messagetype AI_SOMETHING, text:" << text << std::endl;
+        return;
+    }
+
+    //If we get here, we got something wrong with message
+    std::ios_base::fmtflags f(std::cout.flags());
+    std::cout << "Unknown parameters in message!" << std::endl;
+    std::cout << "Text [" << text << "]" << std::endl;
+    std::cout << "Flags = " << std::uppercase << std::showbase << std::hex << flags << std::endl;
+    std::cout << std::endl;
+    std::cout.flags(f);
+}
+
+int Game::ParseMoveString(const str text, int& x, int& y)
+{
+    str_vector test = {};
+    str temp;
+    int i;
+    temp = "";
+    for(i = 0; i < text.length(); ++i) {
+        if(text[i] == ' ')
+            continue;
+        if(text[i] == ',') {
+            test.push_back(temp);
+            temp = "";
+        } else 
+            temp += text[i];
+    }
+
+    if(test.size() != 2)
+        return -1;
+
+    try
+    {
+        x = std::stoi(test[0]);
+        y = std::stoi(test[1]);
+    }
+    catch(std::invalid_argument const &e)
+    {
+        std::cout << "Not valid numbers! [" << test[0] << "] or [" << test[1] << "]" << std::endl;
+        return -1;
+    }
+    if((x >= boardTiles) || (y >= boardTiles))
+        return -1;
+
+    return 0;
 }
 
 #if (USE_DEBUG == 1)

@@ -31,28 +31,25 @@ Client::Client()
     Cl_ServerSocket = 0;
     Cl_ServerPort = PORT;
 
-    if ((Cl_ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        ClStatus |= ERR_CREATE_SOCKET;
-        #if (USE_DEBUG == 1)
-        dbMessage("Can't create Server socket!", true);
-        #endif
-    } else {
-        std::cout << "Client socket:" << Cl_ServerSocket << std::endl;
-    }
-
-    Cl_Server_addr.sin_family = AF_INET;
-    Cl_Server_addr.sin_port = Cl_ServerPort;
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, AddressString, &Cl_Server_addr.sin_addr) <= 0) {
-        ClStatus |= ERR_INVALID_ADDRESS;
-        #if (USE_DEBUG == 1)
-        dbMessage("Invalid address/ Address not supported", true);
-        #endif
-    } else {
-        std::cout << "Client have server address." << std::endl;
-    }
+    memset(Cl_buffer, 0, sizeof(Cl_buffer));
+    //Test start
+    //cMsg temp;
+    //temp.id = 1354;
+    //temp.cMessage = "Hello world!";
+    //temp.status = 666;
+    //
+    //std::cout << "   ID: " << temp.id << std::endl;
+    //std::cout << "  Msg: " << temp.cMessage << std::endl;
+    //std::cout << "Flags: " << temp.status << std::endl;
+    //memcpy(Cl_buffer, (const unsigned char*)&temp, cMsg_size);
+    //temp = {};
+    //
+    //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
+    //memcpy(&temp, Cl_buffer, cMsg_size);
+    //std::cout << "   ID: " << temp.id << std::endl;
+    //std::cout << "  Msg: " << temp.cMessage << std::endl;
+    //std::cout << "Flags: " << temp.status << std::endl;
+    //Test end
 
     memset(Cl_buffer, 0, sizeof(Cl_buffer));
     Cl_isConnected = false;
@@ -68,6 +65,27 @@ Client::~Client()
 
 int Client::Client_Connect()
 {
+    if ((Cl_ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        ClStatus |= ERR_CREATE_SOCKET;
+        std::cout << "Can't create Server socket!" << std::endl;
+    } else {
+        std::cout << "Client socket:" << Cl_ServerSocket << std::endl;
+    }
+
+    Cl_Server_addr.sin_family = AF_INET;
+    Cl_Server_addr.sin_port = htons(Cl_ServerPort);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    //if(inet_pton(AF_INET, AddressString, &Cl_Server_addr.sin_addr) <= 0) {
+    if(inet_pton(AF_INET, "127.0.0.1", &Cl_Server_addr.sin_addr) <= 0) {
+        ClStatus |= ERR_INVALID_ADDRESS;
+        std::cout << "Invalid address/ Address not supported" << std::endl;
+    } else {
+        std::cout << "Client have server address." << std::endl;
+        //send(Cl_ServerSocket, "Hello from client", strlen("Hello from client"), 0);
+    }
+
     if (connect(Cl_ServerSocket, (struct sockaddr *)&Cl_Server_addr, sizeof(Cl_Server_addr)) < 0) {
         ClStatus |= ERR_CONNECTING;
         Cl_isConnected = false;
@@ -85,8 +103,8 @@ int Client::Client_Connect()
 
 int Client::Client_Disconnect()
 {
-    std::cout << "Client disconnect." << std::endl;
-    close(Cl_ServerSocket);
+    int close_ret = close(Cl_ServerSocket);
+    std::cout << "Client disconnect. Return val:" << close_ret << std::endl;
     Cl_isConnected = false;
     return 0;
 }
@@ -102,48 +120,20 @@ int Client::Client_send(const str text, const uint16_t flags)
     return 0;
 }
 
-bool Client::Client_recv(str& text)
+bool Client::Client_recv(str& text, uint16_t& flags)
 {
-    uint16_t tst;
-    int x = 0;
-    int y = 0;
     if(Cl_MessagesIn.empty()) {
         std::cout << "Client message buffer empty." << std::endl;
         return false;
     } else {
         text = Cl_MessagesIn[0].cMessage;
         //Cl_MessagesIn[0].id;
-        tst = Cl_MessagesIn[0].status;
-        std::cout << "Client got new message [" << text << "] flags:" << tst << "ID:" << Cl_MessagesIn[0].id << std::endl;
-        if((tst & GAME_COMMAND) > 0) {
-            //Game command
-            std::cout << "Game command [" << text << "] ID:" << Cl_MessagesIn[0].id << std::endl;
-        }
-        if((tst & AI_FLAG) > 0) {
-            //Where AI want this message to sended?
-            std::cout << "AI message: " << text << std::endl;
-        }
-        if((tst & AI_MOVE) > 0) {
-            //Use this, if AI-moves are handled diffrrently from humans moves
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "AI move " << text << std::endl;
-            game->OnTileClicked(x, y);
-        }
-        if((tst & CHAT_TEXT) > 0) {
-            //Where we print chat-text?
-            std::cout << "Chat [" << text << "]." << std::endl;
-        }
-        if((tst & HUMAN_MOVE) > 0) {
-            //Use this, if humans moves are handled diffrrently from AI-moves
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "Human move " << text << std::endl;
-            game->OnTileClicked(x, y);
-        }
-        if((tst & (AI_MOVE | HUMAN_MOVE)) > 0) {
-            //Use this if human and AI move handling are not different
-            //Check move data and call 'Game::OnTileClicked(int x, int y)'
-            std::cout << "Move " << text << std::endl;
-        }
+        flags = Cl_MessagesIn[0].status;
+
+        std::cout << "Client got new message [" << Cl_MessagesIn[0].cMessage <<
+            "] flags:" << Cl_MessagesIn[0].status <<
+            "ID:" << Cl_MessagesIn[0].id << std::endl;
+        //Remove oldest in FIFO
 
         Cl_MessagesIn.erase(Cl_MessagesIn.begin());
         return true;
@@ -173,7 +163,8 @@ void Client::Client_Serving()
         if(Cl_ValRead < 0) {
             std::cout << "Error reading socket!" << std::endl;
         } else {
-            std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
+            //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
+            memcpy(&temp, Cl_buffer, cMsg_size);
             Cl_MessagesIn.push_back(temp);
             KillSwitch = 0;
         }
@@ -181,7 +172,7 @@ void Client::Client_Serving()
         if(!Cl_MessagesOut.empty()) {
             temp = Cl_MessagesOut[0];
             Cl_MessagesOut.erase(Cl_MessagesOut.begin());
-            memcpy(Cl_buffer, (const unsigned char*)&temp, sizeof(temp));
+            memcpy(Cl_buffer, (const unsigned char*)&temp, cMsg_size);
             send(Cl_ServerSocket, Cl_buffer, strlen(Cl_buffer), 0);
             KillSwitch = 0;
         }
