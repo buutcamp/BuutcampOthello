@@ -5,6 +5,7 @@ project(Othello)
 set(OTHELLO_SOURCES
 	src/main.cpp
 	src/othello.cpp
+	src/player.cpp
 	src/server.cpp
 	src/client.cpp
 )
@@ -14,6 +15,7 @@ set(OTHELLO_HEADERS
 	src/othello.h
 	src/server.h
 	src/client.h
+	src/player.h
 	src/definet.h
 )
 

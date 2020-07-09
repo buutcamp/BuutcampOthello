@@ -46,6 +46,8 @@ Game::Game(int diskColor, int game_style) :
                     client;
                 if(game_style == ServerGame)
                     server;
+                Player1;
+                Player2;
             }
 
 Game::~Game() {}

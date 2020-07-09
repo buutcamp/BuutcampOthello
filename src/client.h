@@ -30,10 +30,11 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 using str = std::string;
 using str_vector = std::vector<str>;
 
-//ver 0.25 change from class to subroutine
 class Game;
+
 class Client {
     Game* game;
+
     public:
         Client();
         ~Client();

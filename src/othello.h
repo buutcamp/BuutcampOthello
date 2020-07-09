@@ -18,8 +18,9 @@
 #include <string>
 #include <vector>
 #include "definet.h"
-#include "client.h"     //Not class, just subroutine
-#include "server.h"     //Not class, just subroutine
+#include "client.h"     //class Client
+#include "server.h"     //class Server
+#include "player.h"     //class Player
 
 /*
  * 
@@ -32,6 +33,9 @@ enum game_style {LocalGame, ClientGame, ServerGame};
 class Game {
     Server server;
     Client client;
+    Player Player1;
+    Player Player2;
+
     public:
         Game(int disk_color, int game_style);
         ~Game();
