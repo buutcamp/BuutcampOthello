@@ -9,7 +9,8 @@
  
 Player::Player(/* parameters */)
 {
-    //
+    PlayerColor = Empty;    //Must change in GUI
+    PlayerType = -1;        //Must change in GUI
 }
 
 Player::~Player()
@@ -39,5 +40,7 @@ void Player::updatePlayerTurn()
 
 bool Player::resetGame()
 {
+    PlayerColor = Empty;
+    PlayerType = -1;
     return true;
 }

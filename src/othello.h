@@ -56,6 +56,7 @@ class Game {
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
+        Player ActivePlayer;
 
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);

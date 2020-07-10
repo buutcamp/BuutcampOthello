@@ -48,6 +48,7 @@ Game::Game(int diskColor, int game_style) :
                     server;
                 Player1;
                 Player2;
+                ActivePlayer = Player1;
             }
 
 Game::~Game() {}
@@ -123,7 +124,9 @@ void Game::OthelloInit()
     if(GameStyle == ClientGame) {
         if(client.Client_Connect() == 0) {
             //Client connected
+            #if (USE_DEBUG == 1)
             std::cout << "Client found server." << std::endl;
+            #endif
         } else {
             //Could not connect to server!
             std::cout << "Couldn't connect to server!" << std::endl;
@@ -175,7 +178,7 @@ void Game::OnTileClicked(int x, int y)
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
         if(TestPosition(x, y) > 0) {
-            if(playerTurn == White)
+            if(ActivePlayer.PlayerColor == White)
             {
                 scoreWhite += (TestPosition(x, y) + 1);
                 scoreBlack -= TestPosition(x, y);
@@ -188,29 +191,33 @@ void Game::OnTileClicked(int x, int y)
                 playerTurn = White;
             }
 
-            if(GameStyle == ClientGame) {
-                //Set flags, who send this move
-                flags = 0;
-                //flags |= AI_MOVE;
+            //Set flags, who send this move
+            flags = 0;
+            if(ActivePlayer.PlayerType == Human_Local || ActivePlayer.PlayerType == Human_Remote)
                 flags |= HUMAN_MOVE;
-                //Make message from click position
-                txt = std::to_string(x) + "," + std::to_string(y);
-                //client.PutMessage(txt, flags);
+            if(ActivePlayer.PlayerType == AI_Local || ActivePlayer.PlayerType == AI_Remote)
+                flags |= AI_MOVE;
+            //Make message from click position
+            txt = std::to_string(x) + "," + std::to_string(y);
+
+            if(GameStyle == ClientGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Clients move:" << txt << std::endl;
+                #endif
                 client.Client_send(txt, flags);
             }
             if(GameStyle == ServerGame) {
-                //Set flags, who send this move
-                flags = 0;
-                //flags |= AI_MOVE;
-                flags |= HUMAN_MOVE;
-                //Make message from click position
-                txt = std::to_string(x) + "," + std::to_string(y);
-                //server.PutMessage(txt, flags);
+                #if (USE_DEBUG == 1)
+                std::cout << "Servers move:" << txt << std::endl;
+                #endif
                 server.Server_send(txt, flags);
             }
 
             if(GameStyle == LocalGame) {
                 //Local game
+                #if (USE_DEBUG == 1)
+                std::cout << "Local move:" << txt << std::endl;
+                #endif
             }
             /*
              * Test if now turn for AI or remote
@@ -227,10 +234,13 @@ void Game::OnTileClicked(int x, int y)
                 discs_counter = 4;
             }
 
-            if(CurrentDiskColor == White)
-                CurrentDiskColor = Black;
-            else
+            if(ActivePlayer.GetPlayerNumber() == 1) {
                 CurrentDiskColor = White;
+                ActivePlayer = Player2;
+            } else {
+                CurrentDiskColor = Black;
+                ActivePlayer = Player1;
+            }
             if (showHint)
                 UpdateHintMask();
         }
@@ -757,43 +767,69 @@ void Game::HandleRemoteMessages()
     std::cout << "" << std::endl;
     if((flags & GAME_COMMAND) > 0) {
         //Game command
+        #if (USE_DEBUG == 1)
         std::cout << "Game command [" << text << "]" << std::endl;
+        #endif
         if(text == CMND_REST_GAME) {
             //Game master calls reset the game
+            #if (USE_DEBUG == 1)
             std::cout << "Game master reset game!" << std::endl;
+            #endif
         } else if(text == CMND_INIT_8X8) {
             //Set board to 8 x 8 mode
+            #if (USE_DEBUG == 1)
             std::cout << "Board set to 8x8" << std::endl;
+            #endif
         } else if( text == CMND_INIT_10X10) {
             //Set board to 10 x 10 mode
+            #if (USE_DEBUG == 1)
             std::cout << "Board set to 10x10" << std::endl;
+            #endif
         } else if( text == CMND_INIT_12X12) {
             //Set board to 12 x 12 mode
+            #if (USE_DEBUG == 1)
             std::cout << "Board set to 12x12" << std::endl;
+            #endif
         } else if( text == CMND_P1_LOCAL) {
             //Set player 1 as local
+            #if (USE_DEBUG == 1)
             std::cout << "Player 1 is local player" << std::endl;
+            #endif
         } else if( text == CMND_P1_REMOTE) {
             //Set player 1 as remote
+            #if (USE_DEBUG == 1)
             std::cout << "Player 1 is remote player" << std::endl;
+            #endif
         } else if( text == CMND_P1_HUMAN) {
             //Set player 1 as human
+            #if (USE_DEBUG == 1)
             std::cout << "Player 1 is human" << std::endl;
+            #endif
         } else if( text == CMND_P1_AI) {
             //Set player 1 as AI
+            #if (USE_DEBUG == 1)
             std::cout << "Player 1 is AI" << std::endl;
+            #endif
         } else if( text == CMND_P2_LOCAL) {
             //Set player 2 as local
+            #if (USE_DEBUG == 1)
             std::cout << "Player 2 is local player" << std::endl;
+            #endif
         } else if( text == CMND_P2_REMOTE) {
             //Set player 2 as remote
+            #if (USE_DEBUG == 1)
             std::cout << "Player 2 is remote player" << std::endl;
+            #endif
         } else if( text == CMND_P2_HUMAN) {
             //Set player 2 as human
+            #if (USE_DEBUG == 1)
             std::cout << "Player 2 is human" << std::endl;
+            #endif
         } else if( text == CMND_P2_AI) {
             //Set player 2 as AI
+            #if (USE_DEBUG == 1)
             std::cout << "Player 2 is AI" << std::endl;
+            #endif
         } else {
             //Unknown command!
             std::cout << "ERROR! Unknown command [" << text << "]" << std::endl;
@@ -803,7 +839,9 @@ void Game::HandleRemoteMessages()
 
     if((flags & AI_FLAG) > 0) {
         //Where AI want this message to sended?
+        #if (USE_DEBUG == 1)
         std::cout << "AI message: " << text << std::endl;
+        #endif
         //What we do with this in this state of game?
         return;
     }
@@ -826,10 +864,14 @@ void Game::HandleRemoteMessages()
         //Use this if human and AI move handling are not different
         //Check move data and call 'Game::OnTileClicked(int x, int y)'
         if(ParseMoveString(text, x, y) == 0) {
+            #if (USE_DEBUG == 1)
             std::cout << "Move " << text << std::endl;
+            #endif
             OnTileClicked(x, y);
         } else {
+            #if (USE_DEBUG == 1)
             std::cout << "Move data " << text << " was illegal!" << std::endl;
+            #endif
             //How we handle illegal move?
             //Other than send message of illegal move (HUMAN_ILLEGAL_MOVE or AI_ILLEGAL_MOVE)
         }
@@ -844,26 +886,34 @@ void Game::HandleRemoteMessages()
 
     if((flags & CHAT_TEXT) > 0) {
         //Where we print chat-text?
+        #if (USE_DEBUG == 1)
         std::cout << "Chat [" << text << "]." << std::endl;
+        #endif
         //Send text to textbox
         return;
     }
 
     if((flags & RESYNCH_GAMETABLE) > 0) {
         //We get other sides gametable to overwrite this ones
+        #if (USE_DEBUG == 1)
         std::cout << "Gameboard resynch, we write GameBoard with following data: " << text << std::endl;
+        #endif
         return;
     }
 
     if((flags & HUMAN_SOMETHING) > 0) {
         //For future use of human players message
+        #if (USE_DEBUG == 1)
         std::cout << "Messagetype HUMAN_SOMETHING, text:" << text << std::endl;
+        #endif
         return;
     }
 
     if((flags & AI_SOMETHING) > 0) {
         //For future use of AI players message
+        #if (USE_DEBUG == 1)
         std::cout << "Messagetype AI_SOMETHING, text:" << text << std::endl;
+        #endif
         return;
     }
 

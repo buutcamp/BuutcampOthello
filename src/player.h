@@ -22,6 +22,17 @@ class Player {
         void update();
         void updatePlayerTurn();
         bool resetGame();
+        int  PlayerType;    //enum player
+        int  PlayerColor;
+        int GetPlayerNumber() {
+            if(PlayerColor == Black) {
+                return 1;   //Black player is every time Player1
+            } else if(PlayerColor == White) {
+                return 2;   //White player is every time Player2
+            } else {
+                return 0;   //Not selected yet
+            }
+        }
     private:
         std::vector<std::vector<int>> GameBoard;
         int scoreWhite;
