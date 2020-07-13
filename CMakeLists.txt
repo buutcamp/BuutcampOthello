@@ -5,12 +5,21 @@ project(Othello)
 set(OTHELLO_SOURCES
 	src/main.cpp
 	src/othello.cpp
+	src/server.cpp
+	src/client.cpp
+	src/ai.cpp
 )
 
 set(OTHELLO_HEADERS
 	src/main.h
 	src/othello.h
+	src/server.h
+	src/client.h
+	src/definet.h
+	src/ai.h
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(OTHELLO_LIBS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs")
