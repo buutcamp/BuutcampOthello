@@ -7,6 +7,7 @@ set(OTHELLO_SOURCES
 	src/othello.cpp
 	src/server.cpp
 	src/client.cpp
+	src/ai.cpp
 )
 
 set(OTHELLO_HEADERS
@@ -15,6 +16,7 @@ set(OTHELLO_HEADERS
 	src/server.h
 	src/client.h
 	src/definet.h
+	src/ai.h
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
