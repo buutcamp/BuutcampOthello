@@ -8,14 +8,18 @@ set(OTHELLO_SOURCES
 	src/player.cpp
 	src/server.cpp
 	src/client.cpp
+	src/ai.cpp
+	src/board.cpp
 )
 
 set(OTHELLO_HEADERS
 	src/main.h
 	src/othello.h
+	src/player.h
 	src/server.h
 	src/client.h
-	src/player.h
+	src/ai.h
+	src/board.h
 	src/definet.h
 )
 

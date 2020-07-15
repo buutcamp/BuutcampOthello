@@ -11,6 +11,9 @@ std::string txt;
 
 std::string ver_txt = "ver 0.25";
 
+/*
+ * class Game
+ */
 Game::Game(int diskColor, int game_style) :
             GameStyle(game_style),
             diskRadius(29),
@@ -49,9 +52,15 @@ Game::Game(int diskColor, int game_style) :
                 Player1;
                 Player2;
                 ActivePlayer = Player1;
+                //AI(oBoard, Black);
             }
 
-Game::~Game() {}
+Game::~Game()
+{
+    /*
+     * Must we now put here something, we have so many sub-classes in same run?
+     */
+}
 
 // Window intialization
 void Game::InitSdl()
@@ -137,13 +146,15 @@ void Game::OthelloInit()
      * Server initialize and start listening
      */
     if(GameStyle == ServerGame) {
-        //if(server.Server_Start(PORT) == 0) {
-        //    //Server started and listening
-        //    std::cout << "Server is listening port:" << PORT << std::endl;
-        //} else {
-        //    //Could not start server!
-        //    std::cout << "Couldn't start server!" << std::endl;
-        //}
+        if(server.Server_Start(PORT) == 0) {
+            //Server started and listening
+            #if (USE_DEBUG == 1)
+            std::cout << "Server is listening port:" << PORT << std::endl;
+            #endif
+        } else {
+            //Could not start server!
+            std::cout << "Couldn't start server!" << std::endl;
+        }
     }
 }
 

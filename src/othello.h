@@ -21,20 +21,20 @@
 #include "client.h"     //class Client
 #include "server.h"     //class Server
 #include "player.h"     //class Player
+#include "ai.h"
+#include "board.h"
+
 
 /*
- * 
+ * class Game
  */
-
-enum pcs {Empty, White, Black, Hint};
-enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
-enum game_style {LocalGame, ClientGame, ServerGame};
-
 class Game {
     Server server;
     Client client;
     Player Player1;
     Player Player2;
+    OthelloHeuristic AI;
+    OthelloBoard board;
 
     public:
         Game(int disk_color, int game_style);
@@ -105,9 +105,9 @@ class Game {
         SDL_GLContext gl_context;
 };
 
+
 #if (USE_DEBUG == 1)
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
 
 #endif      //end othello.h
-

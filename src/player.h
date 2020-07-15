@@ -6,6 +6,7 @@
 
 #ifndef _PLAYERH
 #define _PLAYERH
+#include "definet.h"
 #include "othello.h"
 
 class Game;     //Must tell, who is our master
@@ -22,8 +23,8 @@ class Player {
         void update();
         void updatePlayerTurn();
         bool resetGame();
-        int  PlayerType;    //enum player
-        int  PlayerColor;
+        int  PlayerType = -1;
+        int  PlayerColor = Empty;
         int GetPlayerNumber() {
             if(PlayerColor == Black) {
                 return 1;   //Black player is every time Player1

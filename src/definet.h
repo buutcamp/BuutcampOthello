@@ -7,6 +7,10 @@
 #ifndef _DEFINET_H_
 #define _DEFINET_H_
 
+enum pcs {Empty, White, Black, Hint};
+enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
+enum game_style {LocalGame, ClientGame, ServerGame};
+
 /* Sets constants */
 #define WIDTH                   1000     // Window width
 #define HEIGHT                  800     // Window height
