@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include "othello.h"
 
-class othelloHeuristic {
+class ai {
     public:
         int evaluate(othelloBoard &board, int color);
 
@@ -25,4 +25,4 @@ class othelloHeuristic {
         int corners(othelloBoard &board, int &color);
 };
 
-#endif // HEURISTIC_HPP
+#endif // AI_HPP
