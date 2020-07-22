@@ -55,10 +55,10 @@ Server::Server()
 
 Server::~Server()
 {
-    close(ClientSocket);
+    //close(ClientSocket);
     close(ServerSocket);
-    MessagesIn = {};
-    MessagesOut = {};
+   // MessagesIn = {};
+   // MessagesOut = {};
 }
 
 int Server::Start(const int port)
@@ -71,7 +71,7 @@ int Server::Start(const int port)
     }
     SrvStatus &= ~(ERR_OPEN_SOCKET);
     explicit_bzero((char *) &Server_addr, sizeof(Server_addr));
-    ServerPort = port;
+    ServerPort = PORT;
 
     // Forcefully attaching socket to the port 8080
     if (bind(ServerSocket, (struct sockaddr *)&Server_addr, sizeof(Server_addr)) < 0) {
@@ -98,7 +98,7 @@ int Server::Start(const int port)
 int Server::Stop()
 {
     //std::thread srv.join();
-    close(ClientSocket);
+    close(ServerSocket);
     isRunning = false;
     return 0;
 }

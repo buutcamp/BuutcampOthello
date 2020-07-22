@@ -50,11 +50,11 @@ class Server {
         struct sockaddr_in Server_addr;
         struct sockaddr_in Client_addr;
         int addrlen = sizeof(Server_addr);
-        int ServerSocket = 0;
-        int ServerPort = 8080;
-        int ClientSocket = 0;
+        int ServerSocket;
+        int ServerPort;
+        int ClientSocket;
         int SocketOptions = 1;
-        int ValRead = 0;
+        int ValRead;
         uint16_t SrvStatus;
         bool isRunning = false;
         char buffer[1024];

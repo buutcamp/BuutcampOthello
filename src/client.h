@@ -48,9 +48,9 @@ class Client {
         std::vector<cMsg> MessagesOut;
         struct sockaddr_in Server_addr;
         struct sockaddr_in Client_addr;
-        int ServerSocket = 0;
-        int ValRead = 0;
-        int ServerPort = 8080;
+        int ClientSocket;
+        int ValRead;
+        int ClientPort;
         uint16_t ClStatus;
         bool isConnected;
         char buffer[1024];

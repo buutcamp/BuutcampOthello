@@ -17,7 +17,7 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 #include <vector>
-
+#include "player.h"
 
 #define SERVER_MODULE_IN_USE        //Comment this line if not used
 #define CLIENT_MODULE_IN_USE        //Comment this line if not used
@@ -42,34 +42,36 @@
  */
 
 enum pcs {Empty, White, Black, Hint};
+class Player;
 
 class Game {
+    //friend class Player;
     public: 
         Game(int disk_color);
         ~Game();
 
-        void OthelloInit();
+        void OthelloInit(void);
         void InitSdl();
         void InitImgui();
         void OthelloFrame(float deltaTime);
-        void OthelloRender(int width, int height);
-        void OnTileClicked(int x, int y);
-        void update();
+        void OthelloRender(int width, int height /*, Game game*/);
+        //void OnTileClicked(int x, int y);
+        void update(/*Game game*/);
         void handleEvents();
         void clean();
-        void updateScore();
-        void updatePlayerTurn();
+        //void updateScore();
+        //void updatePlayerTurn();
         bool resetGame();
         bool gameOver();
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
 
-        int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
-        int  TestPosition(const int x, const int y);
-        void FlipDisks(const int x, const int y);
+        //int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
+        //int  TestPosition(const int x, const int y);
+       // void FlipDisks(const int x, const int y);
        // #if (USE_HINT_MASK == 1)
-        void UpdateHintMask(void);
+       // void UpdateHintMask(void);
        // #endif
 
     private:
@@ -91,21 +93,23 @@ class Game {
         const ImColor diskColorHint;
         std::vector<std::vector<int>> HintMask;
        // #endif
-        int scoreWhite;
-        int scoreBlack;
-        int playerTurn;
-        int passed_gameTurn_counter; 
-        int hintCount;
+        //int scoreWhite;
+        //int scoreBlack;
+        //int playerTurn;
+       // int passed_gameTurn_counter; 
+       // int hintCount;
         int CurrentDiskColor;
-        bool reset_game;
-        bool boardSizeChanged;
+        //bool reset_game;
+        //bool boardSizeChanged;
         bool isRunning;
         bool showHint;
         bool game_over;
-        bool pass_turn;
+      //  bool pass_turn;
 
         SDL_Window* window;
         SDL_GLContext gl_context;
+        Player bPlayer;
+        Player wPlayer;
 };
 
 #if (USE_DEBUG == 1)
