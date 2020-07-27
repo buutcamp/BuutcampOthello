@@ -14,7 +14,7 @@ class OthelloHeuristic {
     //Game* game;         //for main class functions call example: game->OnTileClicked(int x, int y);
     OthelloBoard* board;
 
-    public:
+  public:
         OthelloHeuristic();
         ~OthelloHeuristic();
         int evaluate(OthelloBoard &board, int color);
@@ -34,4 +34,4 @@ class OthelloHeuristic {
         int corners(OthelloBoard &board, int &color);
 };
 
-#endif // HEURISTIC_HPP
+#endif // AI_HPP
