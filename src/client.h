@@ -30,10 +30,11 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 using str = std::string;
 using str_vector = std::vector<str>;
 
-class Game;
+//class Game;
 
 class Client {
-    Game* game;
+    //Game* game;
+    friend class Game;
 
     public:
         Client();

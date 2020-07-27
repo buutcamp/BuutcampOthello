@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    Game game(Black, game_type);
+    Game game(White, game_type);
 
     game.InitSdl();
     game.InitImgui();
@@ -52,14 +52,14 @@ int main(int argc, char* argv[])
 
     while (game.gameRunning())
     {
-        if((game.resetGame() || game.changeBoardsize()))
+        if(game.resetGame() || game.changeBoardsize())
             game.OthelloInit();
 
         game.handleEvents();
         game.update();
         game.gameOver();
-
     }
+  
     //clean up everything
     game.clean();
 	return 0;

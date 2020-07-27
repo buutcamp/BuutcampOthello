@@ -10,15 +10,14 @@
 #include "definet.h"
 #include "board.h"
 
-class OthelloHeuristic {
+class ai {
     //Game* game;         //for main class functions call example: game->OnTileClicked(int x, int y);
     OthelloBoard* board;
 
-    public:
-        OthelloHeuristic();
-        ~OthelloHeuristic();
+  public:
+        ai();
+        ~ai();
         int evaluate(OthelloBoard &board, int color);
-
     private:
         std::unordered_set<int> stableDiscs;
         std::unordered_map<int, std::list<int>> pMoves;
@@ -35,4 +34,4 @@ class OthelloHeuristic {
         int corners(OthelloBoard &board, int &color);
 };
 
-#endif // HEURISTIC_HPP
+#endif // AI_HPP
