@@ -18,7 +18,6 @@ class OthelloHeuristic {
         OthelloHeuristic();
         ~OthelloHeuristic();
         int evaluate(OthelloBoard &board, int color);
-
     private:
         std::unordered_set<int> stableDiscs;
         std::unordered_map<int, std::list<int>> pMoves;

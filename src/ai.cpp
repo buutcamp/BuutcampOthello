@@ -1,6 +1,7 @@
-#include "othello.h"
 
-//1
+#include "othello.h"
+#include "ai.h"
+
 OthelloHeuristic::OthelloHeuristic()
 {
     //
@@ -11,7 +12,8 @@ OthelloHeuristic::~OthelloHeuristic()
     //
 }
 
-int OthelloHeuristic::evaluate(OthelloBoard &board, int color) {
+//1
+int othelloHeuristic::evaluate(othelloBoard &board, int color) {
     if (board.terminalState()) {
         return 100000*utility(board, color);
     }
@@ -45,6 +47,7 @@ int OthelloHeuristic::evaluate(OthelloBoard &board, int color) {
 
 //2
 int OthelloHeuristic::utility(OthelloBoard &board, int &color) {
+
     int util = std::accumulate(board.positions.begin(),
             board.positions.end(), 0);
 
@@ -57,6 +60,7 @@ int OthelloHeuristic::utility(OthelloBoard &board, int &color) {
 }//2
 
 //3 // Relative disc difference between the two players
+
 int OthelloHeuristic::discDifference(OthelloBoard &board, int &color) {
     int blackCount = std::count(board.positions.begin(),
             board.positions.end(), 1);
@@ -72,6 +76,7 @@ int OthelloHeuristic::discDifference(OthelloBoard &board, int &color) {
 }//3
 
 //4 // Number of possible moves
+
 int OthelloHeuristic::mobility(OthelloBoard &board, int &color) {
     board.findLegalMoves(1, &pMoves);
     int blackMoves = pMoves.size();
@@ -90,6 +95,7 @@ int OthelloHeuristic::mobility(OthelloBoard &board, int &color) {
 }//4
 
 //5
+
 int OthelloHeuristic::potentialMobility(OthelloBoard &board, int color) {
     int myPotentialMobility = playerPotentialMobility(board, color);
     int opponentPotentialMobility = playerPotentialMobility(board, -color);
@@ -99,6 +105,7 @@ int OthelloHeuristic::potentialMobility(OthelloBoard &board, int color) {
 }//5
 
 //6
+
 int OthelloHeuristic::playerPotentialMobility(OthelloBoard &board, int color) {
     std::vector<int> boardInterior = {18, 19, 20, 21,
                                       26, 27, 28, 29,
@@ -263,6 +270,7 @@ void OthelloHeuristic::stableDiscsFromCorner(OthelloBoard &board, int corner, in
 }//8
 
 //9
+
 int OthelloHeuristic::parity(OthelloBoard &board) {
     int squaresRemaining = 64 - board.discsOnBoard;
 
@@ -358,7 +366,9 @@ int OthelloHeuristic::squareWeights(OthelloBoard &board, int &color) {
 }//10
 
 //11
+
 int OthelloHeuristic::corners(OthelloBoard &board, int &color) {
+
     std::vector<int> corners = {0, 7, 56, 63};
     int blackCorners = 0;
     int whiteCorners = 0;
