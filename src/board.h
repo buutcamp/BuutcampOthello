@@ -4,15 +4,16 @@
 #include "othello.h"
 #include "definet.h"
 
-class Game;
+//class Game;
 //class OthelloHeuristic;
 
 /*
  * class othelloBoard
  */
 class OthelloBoard {
-    Game* game;
+    //Game* game;
     //OthelloHeuristic* AI;
+    friend class Game;
 
     public:
         OthelloBoard();

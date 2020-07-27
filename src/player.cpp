@@ -1,7 +1,6 @@
 /*
  * class Player
- * ver 0.01
- * This is just for compiler to prevent errors
+ * ver 1.00
  */
 
 #include "player.h"
@@ -9,14 +8,14 @@
 
 Player::Player(/*parametres*/): 
             boardTiles(BOARD_TILES), 
-            current_disc_color(BLACK),
+            current_disc_color(WHITE),
             GameBoard{{0}},
             HintMask{{0}},
             hintCount(0),
             passed_gameTurn_counter(0),
             scoreWhite(2),
             scoreBlack(2),
-           // playerTurn(BLACK),
+            //playerTurn(WHITE),
             board_size_changed(false),
             //currentTurn(turn),
             reset_game(false),

@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.25
+ * ver 1.0
  */
 #include <iostream>
 
@@ -37,9 +37,9 @@ class Player;
 class Game {
     Server server;
     Client client;
-    //Player Player1;
-    //Player Player2;
-    OthelloHeuristic AI;
+    //Player wPlayer;
+    //Player bPlayer;
+    ai AI;
     OthelloBoard board;
 
     public:
@@ -65,10 +65,10 @@ class Game {
         Player ActivePlayer;
         //int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         //int  TestPosition(const int x, const int y);
-       // void FlipDisks(const int x, const int y);
-       // #if (USE_HINT_MASK == 1)
-       // void UpdateHintMask(void);
-       // #endif
+        //void FlipDisks(const int x, const int y);
+        //#if (USE_HINT_MASK == 1)
+        //void UpdateHintMask(void);
+        //#endif
         bool LocalLock;
         std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
         std::vector<std::vector<int>> GetHintMask() {return HintMask;}
@@ -91,20 +91,19 @@ class Game {
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
         const ImColor diskColorHint;
-        std::vector<std::vector<int>> HintMask;
+        //std::vector<std::vector<int>> HintMask;
         //int scoreWhite;
         //int scoreBlack;
         //int playerTurn;
-       // int passed_gameTurn_counter; 
-       // int hintCount;
+        //int passed_gameTurn_counter; 
+        //int hintCount;
         int CurrentDiskColor;
         //bool reset_game;
         //bool boardSizeChanged;
         bool isRunning;
         bool showHint;
         bool game_over;
-      //  bool pass_turn;
-
+        //bool pass_turn;
         void HandleRemoteMessages();
         int ParseMoveString(const str text, int& x, int& y);
 

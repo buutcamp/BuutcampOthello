@@ -42,10 +42,10 @@ class Player {
     int  PlayerType = -1;
     int  PlayerColor = Empty;
     int GetPlayerNumber() {
-            if(PlayerColor == Black) {
-                return 1;   //Black player is every time Player1
-            } else if(PlayerColor == White) {
-                return 2;   //White player is every time Player2
+            if(PlayerColor == White) {
+                return 1;   //White player is every time Player1
+            } else if(PlayerColor == Black) {
+                return 2;   //Black player is every time Player2
             } else {
                 return 0;   //Not selected yet
             }

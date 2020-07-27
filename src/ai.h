@@ -10,13 +10,13 @@
 #include "definet.h"
 #include "board.h"
 
-class OthelloHeuristic {
+class ai {
     //Game* game;         //for main class functions call example: game->OnTileClicked(int x, int y);
     OthelloBoard* board;
 
   public:
-        OthelloHeuristic();
-        ~OthelloHeuristic();
+        ai();
+        ~ai();
         int evaluate(OthelloBoard &board, int color);
     private:
         std::unordered_set<int> stableDiscs;
