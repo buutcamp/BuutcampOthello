@@ -13,7 +13,7 @@ OthelloHeuristic::~OthelloHeuristic()
 }
 
 //1
-int othelloHeuristic::evaluate(othelloBoard &board, int color) {
+int ai::evaluate(othelloBoard &board, int color) {
     if (board.terminalState()) {
         return 100000*utility(board, color);
     }
@@ -46,8 +46,8 @@ int othelloHeuristic::evaluate(othelloBoard &board, int color) {
 }//1
 
 //2
-int OthelloHeuristic::utility(OthelloBoard &board, int &color) {
 
+int OthelloHeuristic::utility(OthelloBoard &board, int &color) {
     int util = std::accumulate(board.positions.begin(),
             board.positions.end(), 0);
 
@@ -193,6 +193,7 @@ int OthelloHeuristic::playerPotentialMobility(OthelloBoard &board, int color) {
 }//6
 
 //7 // Computes a lower bound on the number of stable discs
+
 int OthelloHeuristic::stability(OthelloBoard &board, int color) {
     stableDiscs.clear();
 
@@ -214,6 +215,7 @@ int OthelloHeuristic::stability(OthelloBoard &board, int color) {
 }//7
 
 //8 // Finds the number of stable discs given a corner
+
 void OthelloHeuristic::stableDiscsFromCorner(OthelloBoard &board, int corner, int color) {
     bool down, right;
     if (corner == 0) {
@@ -283,6 +285,7 @@ int OthelloHeuristic::parity(OthelloBoard &board) {
 }//9
 
 //10 // Assigns a weight to every square on the board
+
 int OthelloHeuristic::squareWeights(OthelloBoard &board, int &color) {
     std::vector<int> weights = {
          200, -100, 100,  50,  50, 100, -100,  200,
@@ -368,7 +371,6 @@ int OthelloHeuristic::squareWeights(OthelloBoard &board, int &color) {
 //11
 
 int OthelloHeuristic::corners(OthelloBoard &board, int &color) {
-
     std::vector<int> corners = {0, 7, 56, 63};
     int blackCorners = 0;
     int whiteCorners = 0;
