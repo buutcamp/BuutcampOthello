@@ -30,18 +30,17 @@ Game::Game(int diskColor, int game_style) :
             diskColorBlack(ImColor(0.0f, 0.0f, 0.0f)),
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
             HintMask{{0}},
-            scoreWhite(2),
-            scoreBlack(2),
-            playerTurn(Black),
-            passed_gameTurn_counter(0),
-            hintCount(0),
+            //scoreWhite(2),
+            //scoreBlack(2),
+            //playerTurn(Black),
+            //passed_gameTurn_counter(0),
+            // hintCount(0),
             CurrentDiskColor(diskColor),
-            reset_game(false),
-            boardSizeChanged(false),
-            showHint(true),
-            LocalLock(false),
-            game_over(false),
-            pass_turn(false)
+            //reset_game(false)
+            //boardSizeChanged(false),
+            showHint(true)
+            //game_over(false)
+            // pass_turn(false)
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
@@ -102,18 +101,35 @@ void Game::OthelloInit()
             GameBoard[x][y] = Empty;
             if (showHint)
                 HintMask[x][y] = Empty;
-        }
-    }
-    //Start placement
+        }//Start placement
     //This way we can make 8*8, 10*10 and 12*12 board as different levels
     GameBoard[(boardTiles / 2) - 1][(boardTiles / 2) - 1] = White;
     GameBoard[boardTiles / 2][boardTiles / 2] = White;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
     CurrentDiskColor = Black; // Player with Black discs begin game
-    if (showHint)
-        UpdateHintMask();
+    }
+    
+    bPlayer.initializeGameBoard();
+    wPlayer.initializeGameBoard();
 
+    /*
+    bPlayer.setCurrentDiskColor(CurrentDiskColor);
+    wPlayer.setCurrentDiskColor(CurrentDiskColor);
+
+    if (showHint)
+    {
+       bPlayer.UpdateHintMask();   
+       wPlayer.UpdateHintMask();   
+    }*/
+    if (showHint)
+    {
+       bPlayer.UpdateHintMask();   
+       HintMask = bPlayer.HintMask;
+       wPlayer.UpdateHintMask();   
+       HintMask= wPlayer.HintMask;
+    }               
+                   
     // adjusts the spacing between buttons
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing, tileSpacing));
 
@@ -163,7 +179,7 @@ void Game::OthelloFrame(float deltaTime)
 {
     //std::cout << "Delta frame:" << deltaTime << std::endl;
 }
-
+/*
 // called when a tile was clicked
 void Game::OnTileClicked(int x, int y)
 {
@@ -261,7 +277,7 @@ void Game::OnTileClicked(int x, int y)
            discs_counter = 4;
         }
     }
-}
+}*/
 
 bool Game::OthelloButton(int x, int y)
 {
@@ -277,7 +293,7 @@ bool Game::OthelloButton(int x, int y)
 }
 
 // this function handles all rendering of the GUI
-void Game::OthelloRender(int width, int height)
+void Game::OthelloRender(int width, int height/*, Game game*/)
 {
     ImColor diskColor;
     // the main imgui window uses all the space available
@@ -290,24 +306,25 @@ void Game::OthelloRender(int width, int height)
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
         // draw score discs
-        drawList->AddCircleFilled(ImVec2(320, 30), diskRadius * 0.75, diskColorWhite, 30);
-        drawList->AddCircleFilled(ImVec2(640, 30), diskRadius * 0.75, diskColorBlack, 30);
+        drawList->AddCircleFilled(ImVec2(320, 30), diskRadius * 0.75, diskColorBlack, 30);
+        drawList->AddCircleFilled(ImVec2(640, 30), diskRadius * 0.75, diskColorWhite, 30);
 
         ImGui::Dummy(ImVec2(300,45));
         ImGui::Spacing();
         ImGui::SameLine(315, 0);
-        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", scoreWhite);
+       // ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.updateBlackScore()/*scoreWhite*/);
+        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.scoreBlack/*scoreWhite*/);
         ImGui::SameLine(635, 0);
-        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", scoreBlack);
+        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", wPlayer.scoreWhite/*scoreBlack*/);
 
         //Draw player turn disc
         ImGui::SameLine(420, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "TURN");
-        if(playerTurn == White)
+        if(wPlayer.setCurrentDiskColor() == White)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius * 0.75, diskColorWhite, 30);
         }
-            else
+            else if (bPlayer.setCurrentDiskColor() == Black)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
         }
@@ -322,7 +339,16 @@ void Game::OthelloRender(int width, int height)
             {
                 ImGui::SameLine(0, (float)tileSpacing);
                 if (OthelloButton(x, y))
-                    OnTileClicked(x, y);
+                {
+                    bPlayer.OnTileClicked(x, y);
+                    GameBoard = bPlayer.GameBoard;
+                    HintMask = bPlayer.HintMask;
+
+                    wPlayer.OnTileClicked(x, y);
+                    GameBoard = wPlayer.GameBoard;
+                    HintMask = wPlayer.HintMask;
+                }
+                    
             }
             ImGui::NewLine();
         }
@@ -382,9 +408,9 @@ void Game::OthelloRender(int width, int height)
             txt = " ";
             dbMessage(txt, true);
             #endif
-
-        }
-        //draw combo dropbox
+        }        
+      
+        //draw combo dropbox to select game board size
         static int item = 0;
         int current_item = item;
         const char* items[] = {"8x8", "10x10", "12x12"};
@@ -395,48 +421,97 @@ void Game::OthelloRender(int width, int height)
         ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
+
         if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
         if(current_item != item)
         {
             switch(item)
             {
-                    case 0:
-                        current_item = 0;
-                        boardTiles = BOARD_TILES;
-                        break;
-                    case 1:
-                        current_item = 1;
-                        boardTiles = BOARD_TILES + 2;
-                        break;
-                    case 2:
-                        current_item = 2;
-                        boardTiles = BOARD_TILES + 4;
-                        break;
-                }
-                boardSizeChanged = true;
-                GameBoard.clear();
-                GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-                if (showHint)
-                {
-                    HintMask.clear();
-                    HintMask.resize(boardTiles,std::vector<int>(boardTiles));
-                }
+                case 0: 
+                    current_item = 0;
+                    boardTiles = BOARD_TILES;
+                    break;
+                case 1: 
+                    current_item = 1;
+                    boardTiles = BOARD_TILES + 2;
+                    break;
+                case 2:
+                    current_item = 2;
+                    boardTiles = BOARD_TILES + 4;
+                    break;
             }
+            bPlayer.updateBoardTiles(boardTiles);
+            wPlayer.updateBoardTiles(boardTiles);
+
+            //update flag for board size change
+            //boardSizeChanged = true;
+            bPlayer.OnChangeBoardSize();
+            wPlayer.OnChangeBoardSize();
+
+            GameBoard.clear();
+            GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+            bPlayer.updateBoardSize(GameBoard);
+            wPlayer.updateBoardSize(GameBoard);
+
+            if (showHint)
+            {
+               HintMask.clear();
+               HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+               bPlayer.updateGameHint(HintMask);
+               wPlayer.updateGameHint(HintMask);
+            }
+        }
         }
 
         // Draw Reset button
          ImGui::SameLine(450, 0);
         if(ImGui::Button("RESET"))
         {
-            reset_game = true;
+            //reset_game = true;
+            bPlayer.OnResetButtonClicked();
+            wPlayer.OnResetButtonClicked();
         }
         // draw checkbox
+        bool current_hint = showHint;
         ImGui::SameLine(570, 0);
         ImGui::Checkbox("SHOW NEXT MOVE HINT", &showHint);
+       
+        if(current_hint != showHint)
+        {
+            bPlayer.updateShowHint(showHint);
+            wPlayer.updateShowHint(showHint);
+        }
+        
+       //draw combo dropbox to select players option (H-H, H-AI, AI-AI, AI-H)
+        ImGui::NewLine();
+        static int item2 = 0;
+        int current_item2 = item2;
+        const char* items2[] = {"Human", "AI"};
+       
+       // ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        ImGui::PushItemWidth(120);
+        ImGui::SameLine(230, 0);
+        ImGui::Combo("PLAYERS", &item2, items2, IM_ARRAYSIZE(items2)); 
+        
+        // set number of tiles/ board size based on the selected item
+        if(current_item2 != item2)
+        {
+            switch(item2)
+             {
+                case 0: 
+                    current_item2 = 0;
+                    // code definition for human players
+                    break;
+                case 1: 
+                    current_item2= 1;
+                     // code definition for Human (local) - AI (remote) players
+                    break;
+             }
+        }
     }
     ImGui::End();
 }
-
+/*
 int Game::TestDirection(const int x, const int y, const int dir_x, const int dir_y)
 {
     int reply = 0;
@@ -545,7 +620,7 @@ void Game::FlipDisks(const int x, const int y)
         GameBoard[end_x++][end_y--] = CurrentDiskColor;
     }
 }
-
+*//*
 void Game::UpdateHintMask(void)
 {
     int x, y;
@@ -586,8 +661,8 @@ void Game::UpdateHintMask(void)
     }
 
 }
-
-void Game::update()
+*/
+void Game::update(/*Game object*/)
 {
     uint64_t ticksLast = SDL_GetPerformanceCounter();
 
@@ -619,7 +694,7 @@ void Game::update()
     SDL_GL_SwapWindow(window);
 }
 
-bool Game::resetGame()
+/*bool Game::resetGame()
 {
     if(reset_game)
     {
@@ -636,8 +711,16 @@ bool Game::resetGame()
         return true;
     }
     return false;
+}*/
+bool Game::resetGame()
+{
+    if(bPlayer.reset_Game() || wPlayer.reset_Game())
+    {
+        return true;
+    }
+    return false;
 }
-
+/*
 bool Game::changeBoardsize()
 {
    if(boardSizeChanged)
@@ -656,8 +739,17 @@ bool Game::changeBoardsize()
     }
     return false;
 }
+*/
+bool Game::changeBoardsize()
+{
+   if(bPlayer.boardSizeChanged() || wPlayer.boardSizeChanged())
+    {
+        return true;
+    }
+    return false;
+}
 
-bool Game::gameOver()
+/*bool Game::gameOver()
 {
    if(game_over)
     {
@@ -685,7 +777,34 @@ bool Game::gameOver()
     }
     return false;
 }
+*/
+bool Game::gameOver()
+{
+   if(bPlayer.game_Over() || wPlayer.game_Over())
+    {
+       // if(Play_more)
+       //reset_game = true;
+        // reset_game();
+       // scoreWhite = 2;
+        //scoreBlack = 2;
+        //else
+        // close game --- call main.cpp on if events
 
+        std::cout << "" << "GAME OVER!!" << "\n";
+        if(bPlayer.updateBlackScore() > wPlayer.updateWhiteScore())
+            std::cout << "Winner is Black!" << "\n";
+        else if(bPlayer.updateBlackScore() == wPlayer.updateWhiteScore())
+        {
+            std::cout << "Game is Draw, No winner!" << "\n";
+        }  
+        else
+        {
+            std::cout << "Winner is White!" << "\n";
+        }  
+        return true;
+    }
+    return false;
+}
 void Game::handleEvents()
 {
     SDL_Event event;
@@ -725,13 +844,14 @@ void Game::clean()
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-
+/*
 void Game::updateScore()
 {
     std::cout << "Black score: " << scoreBlack << "\n";
     std::cout << "White score: " << scoreWhite << "\n";
 }
-
+*/
+/*
 void Game::updatePlayerTurn()
 {
     if(pass_turn == true)
@@ -971,6 +1091,7 @@ int Game::ParseMoveString(const str text, int& x, int& y)
 
     return 0;
 }
+*/
 
 #if (USE_DEBUG == 1)
 void dbMessage(const std::string &s, bool crlf)

@@ -31,11 +31,14 @@
 /*
  * class Game
  */
+
+class Player;
+
 class Game {
     Server server;
     Client client;
-    Player Player1;
-    Player Player2;
+    //Player Player1;
+    //Player Player2;
     OthelloHeuristic AI;
     OthelloBoard board;
 
@@ -43,28 +46,29 @@ class Game {
         Game(int disk_color, int game_style);
         ~Game();
 
-        void OthelloInit();
+        void OthelloInit(void);
         void InitSdl();
         void InitImgui();
         void OthelloFrame(float deltaTime);
-        void OthelloRender(int width, int height);
-        void OnTileClicked(int x, int y);
-        void update();
+        void OthelloRender(int width, int height /*, Game game*/);
+        //void OnTileClicked(int x, int y);
+        void update(/*Game game*/);
         void handleEvents();
         void clean();
-        void updateScore();
-        void updatePlayerTurn();
+        //void updateScore();
+        //void updatePlayerTurn();
         bool resetGame();
         bool gameOver();
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
         Player ActivePlayer;
-
-        int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
-        int  TestPosition(const int x, const int y);
-        void FlipDisks(const int x, const int y);
-        void UpdateHintMask(void);
+        //int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
+        //int  TestPosition(const int x, const int y);
+       // void FlipDisks(const int x, const int y);
+       // #if (USE_HINT_MASK == 1)
+       // void UpdateHintMask(void);
+       // #endif
         bool LocalLock;
         std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
         std::vector<std::vector<int>> GetHintMask() {return HintMask;}
@@ -87,25 +91,27 @@ class Game {
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
         const ImColor diskColorHint;
-
-        int scoreWhite;
-        int scoreBlack;
-        int playerTurn;
-        int passed_gameTurn_counter;
-        int hintCount;
+        std::vector<std::vector<int>> HintMask;
+        //int scoreWhite;
+        //int scoreBlack;
+        //int playerTurn;
+       // int passed_gameTurn_counter; 
+       // int hintCount;
         int CurrentDiskColor;
-        bool reset_game;
-        bool boardSizeChanged;
+        //bool reset_game;
+        //bool boardSizeChanged;
         bool isRunning;
         bool showHint;
         bool game_over;
-        bool pass_turn;
+      //  bool pass_turn;
 
         void HandleRemoteMessages();
         int ParseMoveString(const str text, int& x, int& y);
 
         SDL_Window* window;
         SDL_GLContext gl_context;
+        Player bPlayer;
+        Player wPlayer;
 };
 
 
