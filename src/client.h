@@ -54,6 +54,7 @@ class Client {
             uint16_t    status;
             str         cMessage;
         };
+
         int Cl_message_id;
         std::vector<cMsg> Cl_MessagesIn;
         std::vector<cMsg> Cl_MessagesOut;

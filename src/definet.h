@@ -35,6 +35,7 @@ enum game_style {LocalGame, ClientGame, ServerGame};
 
 
 //Communication flags to separate AI and human messages
+
 #define AI_FLAG             0x0001  //For future AI handle
 #define AI_MOVE             0x0002  //Send AI's next move
 #define AI_SOMETHING        0x0004  //For future use

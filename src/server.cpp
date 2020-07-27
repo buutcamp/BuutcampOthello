@@ -63,6 +63,7 @@ int Server::Server_Start(const int port)
         #endif
         return -1;
     }
+
     Srv_Server_addr.sin_family = AF_INET;
     Srv_Server_addr.sin_addr.s_addr = INADDR_ANY;
     Srv_Server_addr.sin_port = Srv_ServerPort;
@@ -75,6 +76,7 @@ int Server::Server_Start(const int port)
     }
     std::cout << "Server socket:" << Srv_ServerSocket << std::endl;
     SrvStatus &= ~(ERR_OPEN_SOCKET);
+
     explicit_bzero((char *) &Srv_Server_addr, sizeof(Srv_Server_addr));
     Srv_ServerPort = port;
 

@@ -107,6 +107,7 @@ void Game::OthelloInit()
     GameBoard[boardTiles / 2][boardTiles / 2] = White;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
+      
     CurrentDiskColor = White; // Player with White discs begin game
     }
     //https://www.mastersofgames.com/rules/reversi-othello-rules.htm
@@ -184,8 +185,9 @@ void Game::OthelloFrame(float deltaTime)
 {
     //std::cout << "Delta frame:" << deltaTime << std::endl;
 }
-
+/*
 // called when a tile was clicked
+
 //void Game::OnTileClicked(int x, int y)
 //{
 //    #if (USE_DEBUG == 1)
@@ -465,6 +467,7 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                bPlayer.updateGameHint(HintMask);
                wPlayer.updateGameHint(HintMask);
             }
+        }
         }
         }
 
@@ -755,35 +758,34 @@ bool Game::changeBoardsize()
     return false;
 }
 
-//bool Game::gameOver()
-//{
-//   if(game_over)
-//    {
-//        game_over = false;
-//       // if(Play_more)
-//       //reset_game = true;
-//        // reset_game();
-//       // scoreWhite = 2;
-//        //scoreBlack = 2;
-//        //else
-//        // close game --- call main.cpp on if events
-//
-//        std::cout << "" << "GAME OVER!!" << "\n";
-//        if(scoreBlack > scoreWhite)
-//            std::cout << "Winner is Black!" << "\n";
-//        else if(scoreBlack == scoreWhite)
-//        {
-//            std::cout << "Draw, No winner!" << "\n";
-//        }
-//        else
-//        {
-//            std::cout << "Winner is White!" << "\n";
-//        }
-//        return true;
-//    }
-//    return false;
-//}
+/*bool Game::gameOver()
+{
+   if(bPlayer.game_Over() || wPlayer.game_Over())
+    {
+       // if(Play_more)
+       //reset_game = true;
+        // reset_game();
+       // scoreWhite = 2;
+        //scoreBlack = 2;
+        //else
+        // close game --- call main.cpp on if events
 
+        std::cout << "" << "GAME OVER!!" << "\n";
+        if(bPlayer.updateBlackScore() > wPlayer.updateWhiteScore())
+            std::cout << "Winner is Black!" << "\n";
+        else if(bPlayer.updateBlackScore() == wPlayer.updateWhiteScore())
+        {
+            std::cout << "Game is Draw, No winner!" << "\n";
+        }  
+        else
+        {
+            std::cout << "Winner is White!" << "\n";
+        }  
+        return true;
+    }
+    return false;
+}
+*/
 bool Game::gameOver()
 {
    if(bPlayer.game_Over() || wPlayer.game_Over())
@@ -811,6 +813,7 @@ bool Game::gameOver()
     }
     return false;
 }
+
 void Game::handleEvents()
 {
     SDL_Event event;
@@ -858,24 +861,26 @@ void Game::updateScore()
 }
 */
 
-//void Game::updatePlayerTurn()
-//{
-//    if(pass_turn == true)
-//    {   if(CurrentDiskColor == White)
-//        {
-//            playerTurn = Black;
-//            CurrentDiskColor = Black;
-//        }
-//        else
-//        {
-//            playerTurn = White;
-//            CurrentDiskColor = White;
-//        }
-//
-//        pass_turn = false;
-//    }
-//
-//}
+/*
+void Game::updatePlayerTurn()
+{
+    if(pass_turn == true)
+    {   if(CurrentDiskColor == White)
+        {
+            playerTurn = Black;
+            CurrentDiskColor = Black;
+        }
+        else
+        {
+            playerTurn = White;
+            CurrentDiskColor = White;
+        }
+
+        pass_turn = false;
+    }
+
+}
+*/
 
 void Game::HandleRemoteMessages()
 {
@@ -1097,6 +1102,7 @@ int Game::ParseMoveString(const str text, int& x, int& y)
 
     return 0;
 }
+*/
 
 
 #if (USE_DEBUG == 1)
