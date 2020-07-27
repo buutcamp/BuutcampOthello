@@ -7,14 +7,14 @@
 #ifndef _DEFINET_H_
 #define _DEFINET_H_
 
-#define SERVER_MODULE_IN_USE        //Comment this line if not used
-#define CLIENT_MODULE_IN_USE        //Comment this line if not used
+enum pcs {Empty, White, Black, Hint};
+enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
+enum game_style {LocalGame, ClientGame, ServerGame};
 
 /* Sets constants */
 #define WIDTH                   1000     // Window width
 #define HEIGHT                  800     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
-//#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
 #define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 
@@ -35,17 +35,33 @@
 
 
 //Communication flags to separate AI and human messages
-#define AI_FLAG             0x0001  //for future AI handle
-#define AI_MOVE             0x0002  //to tell AI's next move
-#define AI_SOMETHING        0x0004  //for future use
-#define AI_ILLEGAL_MOVE     0x0008  //last move was illegal, local and remote games out of synch
 
-#define CHAT_TEXT           0x0010  //to tell text field sended to chat screen
-#define HUMAN_MOVE          0x0020  //to tell human players move
-#define HUMAN_SOMETHING     0x0040  //for future use
-#define HUMAN_ILLEGAL_MOVE  0x0080  //last move was illegal, local and remote games out of synch
+#define AI_FLAG             0x0001  //For future AI handle
+#define AI_MOVE             0x0002  //Send AI's next move
+#define AI_SOMETHING        0x0004  //For future use
+#define AI_ILLEGAL_MOVE     0x0008  //Last move of AI was illegal, local and remote games out of synch
 
+#define CHAT_TEXT           0x0010  //Send text field to other players chat screen
+#define HUMAN_MOVE          0x0020  //Send human players move
+#define HUMAN_SOMETHING     0x0040  //For future use
+#define HUMAN_ILLEGAL_MOVE  0x0080  //Last move of human player was illegal, local and remote games out of synch
+
+#define GAME_COMMAND        0x4000  //Send command to other game
 #define RESYNCH_GAMETABLE   0x8000  //Synch gametables
 
+#define CMND_REST_GAME      "RESET"         //Command remote game to reset
+#define CMND_INIT_8X8       "GAME_8X8"      //Init remote game as 8x8 table
+#define CMND_INIT_10X10     "GAME_10X10"    //Init remote game as 10x10 table
+#define CMND_INIT_12X12     "GAME_12X12"    //Init remote game as 12x12 table
+//Player 1 commands
+#define CMND_P1_LOCAL       "P1L"           //P1 is local in remote end
+#define CMND_P1_REMOTE      "P1R"           //P1 is remote in remote end
+#define CMND_P1_HUMAN       "P1H"           //P1 is human in remote end
+#define CMND_P1_AI          "P1AI"          //P1 is AI in remote end
+//Player 2 commands
+#define CMND_P2_LOCAL       "P2L"           //P2 is local in remote end
+#define CMND_P2_REMOTE      "P2R"           //P2 is remote in remote end
+#define CMND_P2_HUMAN       "P2H"           //P2 is human in remote end
+#define CMND_P2_AI          "P2AI"          //P2 is AI in remote end
 
 #endif

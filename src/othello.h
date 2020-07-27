@@ -1,7 +1,7 @@
 /*
  * Othello game
  * by BuutcampOthello
- * ver 0.20
+ * ver 0.25
  */
 #include <iostream>
 
@@ -17,37 +17,33 @@
 #include <examples/imgui_impl_opengl2.h>
 #include <string>
 #include <vector>
-#include "player.h"
-
-#define SERVER_MODULE_IN_USE        //Comment this line if not used
-#define CLIENT_MODULE_IN_USE        //Comment this line if not used
-
-#ifdef SERVER_MODULE_IN_USE
-#include "server.h"
-#endif
-
-#ifdef CLIENT_MODULE_IN_USE
-#include "client.h"
-#endif
-
-/* Sets constants */
-#define WIDTH                   1000     // Window width
-#define HEIGHT                  800     // Window height
-#define BOARD_TILES             8       // Number of tiles in a row/column
-//#define USE_HINT_MASK           1       //1 = Used in game, 0 = Not in use
-#define USE_DEBUG               0       //1 = In use, 0 = Not used
+#include <list>
+#include <tuple>
+#include <algorithm>
+#include <unordered_map>
+#include "definet.h"
+#include "client.h"     //class Client
+#include "server.h"     //class Server
+#include "player.h"     //class Player
+#include "ai.h"
+#include "board.h"
 
 /*
- * 
+ * class Game
  */
 
-enum pcs {Empty, White, Black, Hint};
 class Player;
 
 class Game {
-    //friend class Player;
-    public: 
-        Game(int disk_color);
+    Server server;
+    Client client;
+    //Player Player1;
+    //Player Player2;
+    OthelloHeuristic AI;
+    OthelloBoard board;
+
+    public:
+        Game(int disk_color, int game_style);
         ~Game();
 
         void OthelloInit(void);
@@ -66,20 +62,25 @@ class Game {
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
-
+        Player ActivePlayer;
         //int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         //int  TestPosition(const int x, const int y);
        // void FlipDisks(const int x, const int y);
        // #if (USE_HINT_MASK == 1)
        // void UpdateHintMask(void);
        // #endif
+        bool LocalLock;
+        std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
+        std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
         const int diskRadius;
         const int tileSize;
-        
+        const int GameStyle;
+
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
+        std::vector<std::vector<int>> HintMask;
         const int tileSpacing;
         const int boardSize;
 
@@ -89,10 +90,8 @@ class Game {
         const ImColor boardColor;
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
-       // #if (USE_HINT_MASK == 1)
         const ImColor diskColorHint;
         std::vector<std::vector<int>> HintMask;
-       // #endif
         //int scoreWhite;
         //int scoreBlack;
         //int playerTurn;
@@ -106,16 +105,36 @@ class Game {
         bool game_over;
       //  bool pass_turn;
 
+        void HandleRemoteMessages();
+        int ParseMoveString(const str text, int& x, int& y);
+
         SDL_Window* window;
         SDL_GLContext gl_context;
         Player bPlayer;
         Player wPlayer;
 };
 
+
 #if (USE_DEBUG == 1)
-#include <iostream>
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
 
-#endif      //end othello.h
+class othelloBoard {
+    public:
 
+        othelloBoard();
+        std::vector<int> positions;//Positions show all pieces on the board
+        int discsOnBoard = 4;
+        float timeLimit = 0.0;
+        bool passes[2] = {false, false};//passes[0] and passes[1] are true if the most recent/second most recent ply was a pass, resp.
+        std::unordered_map<int, std::list<int>> moves;//list of all pieces to be flipped are values.
+
+        void displayBoard(int color);
+        void displayLegalMoves();      
+        void findLegalMoves(int color, std::unordered_map<int, std::list<int>> *pMoves);// Finds all legal moves
+        void findLegalMoveInDirection(int &disc, int &color, int direction, std::unordered_map<int, std::list<int>> *pMoves);//Helper function to find a legal move given a disc, its color and a direction.
+        void updateBoard(int color, std::pair<int, std::list<int>> move);// Update board after a move
+        bool terminalState(); 
+        void index2coord(int index, int &colNum, int &rowNum);// Helper function to convert board square index to coordinate strings
+};
+#endif      //end othello.h

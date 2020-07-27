@@ -8,7 +8,6 @@
 #define _PLAYER_H_
 #include "definet.h"
 #include <vector>
-#include <tuple>
 #include <iostream>
 
 enum Tiles {EMPTY, WHITE, BLACK, HINT};
@@ -39,7 +38,18 @@ class Player {
     void updateGameHint(std::vector<std::vector<int>> hintButton);
     bool boardSizeChanged();
     void initializeGameBoard();
-    
+  
+    int  PlayerType = -1;
+    int  PlayerColor = Empty;
+    int GetPlayerNumber() {
+            if(PlayerColor == Black) {
+                return 1;   //Black player is every time Player1
+            } else if(PlayerColor == White) {
+                return 2;   //White player is every time Player2
+            } else {
+                return 0;   //Not selected yet
+            }
+        }    
 
     private:
     int boardTiles;
@@ -61,4 +71,3 @@ class Player {
 };
 
 #endif      //end _PLAYER_H_
-

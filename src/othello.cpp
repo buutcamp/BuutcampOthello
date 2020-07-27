@@ -1,6 +1,6 @@
 /*
  * Othello game
- * ver 0.20
+ * ver 0.25
  */
 
 #include "othello.h"
@@ -9,17 +9,20 @@
 std::string txt;
 #endif
 
-std::string ver_txt = "ver 0.20";      
+std::string ver_txt = "ver 0.25";
 
-
-Game::Game(int diskColor) : 
-            diskRadius(29), 
-            tileSize(64),   
-            boardTiles(BOARD_TILES), 
+/*
+ * class Game
+ */
+Game::Game(int diskColor, int game_style) :
+            GameStyle(game_style),
+            diskRadius(29),
+            tileSize(64),
+            boardTiles(BOARD_TILES),
             GameBoard{{0}},
-            tileSpacing(2), 
+            tileSpacing(2),
             boardSize(boardTiles * tileSize),
-            buttonColor(ImColor(0.10f, 0.5f, 0.20f)), 
+            buttonColor(ImColor(0.10f, 0.5f, 0.20f)),
             buttonHoverColor(ImColor(0.10f, 0.3f, 0.251)),
             buttonActiveColor(ImColor( 0.0f, 0.7f, 0.0f)),
             boardColor(ImColor(.30f, 0.30f, 0.30f)),
@@ -41,9 +44,22 @@ Game::Game(int diskColor) :
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
+                if(game_style == ClientGame)
+                    client;
+                if(game_style == ServerGame)
+                    server;
+                Player1;
+                Player2;
+                ActivePlayer = Player1;
+                //AI(oBoard, Black);
             }
 
-Game::~Game() {}
+Game::~Game()
+{
+    /*
+     * Must we now put here something, we have so many sub-classes in same run?
+     */
+}
 
 // Window intialization
 void Game::InitSdl()
@@ -94,7 +110,6 @@ void Game::OthelloInit()
     CurrentDiskColor = Black; // Player with Black discs begin game
     }
     
-
     bPlayer.initializeGameBoard();
     wPlayer.initializeGameBoard();
 
@@ -127,12 +142,42 @@ void Game::OthelloInit()
     style.WindowBorderSize = 0.0f;
     style.WindowRounding = 0.0f;
     style.WindowPadding = ImVec2(200, 30);// padding within the window
+
+    /*
+     * Client initialize and connect to server
+     */
+    if(GameStyle == ClientGame) {
+        if(client.Client_Connect() == 0) {
+            //Client connected
+            #if (USE_DEBUG == 1)
+            std::cout << "Client found server." << std::endl;
+            #endif
+        } else {
+            //Could not connect to server!
+            std::cout << "Couldn't connect to server!" << std::endl;
+        }
+    }
+
+    /*
+     * Server initialize and start listening
+     */
+    if(GameStyle == ServerGame) {
+        if(server.Server_Start(PORT) == 0) {
+            //Server started and listening
+            #if (USE_DEBUG == 1)
+            std::cout << "Server is listening port:" << PORT << std::endl;
+            #endif
+        } else {
+            //Could not start server!
+            std::cout << "Couldn't start server!" << std::endl;
+        }
+    }
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
 void Game::OthelloFrame(float deltaTime)
 {
-    
+    //std::cout << "Delta frame:" << deltaTime << std::endl;
 }
 /*
 // called when a tile was clicked
@@ -143,12 +188,24 @@ void Game::OnTileClicked(int x, int y)
     dbMessage(txt, true);
     #endif
 
+    str txt;
+    uint16_t flags;
     static int discs_counter = 4; // total number of discs placed on the board
+
+    /*
+     * 1st test if valid to make move
+     * if (LocalLock == true) {
+     *     if we are here from local player => exit
+     * }
+     * AI and remote games must lock local player out
+     * until they have moves made
+     */
+
     //Game mask update
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
         if(TestPosition(x, y) > 0) {
-            if(playerTurn == White)
+            if(ActivePlayer.PlayerColor == White)
             {
                 scoreWhite += (TestPosition(x, y) + 1);
                 scoreBlack -= TestPosition(x, y);
@@ -160,6 +217,41 @@ void Game::OnTileClicked(int x, int y)
                 scoreWhite -= TestPosition(x, y);
                 playerTurn = White;
             }
+
+            //Set flags, who send this move
+            flags = 0;
+            if(ActivePlayer.PlayerType == Human_Local || ActivePlayer.PlayerType == Human_Remote)
+                flags |= HUMAN_MOVE;
+            if(ActivePlayer.PlayerType == AI_Local || ActivePlayer.PlayerType == AI_Remote)
+                flags |= AI_MOVE;
+            //Make message from click position
+            txt = std::to_string(x) + "," + std::to_string(y);
+
+            if(GameStyle == ClientGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Clients move:" << txt << std::endl;
+                #endif
+                client.Client_send(txt, flags);
+            }
+            if(GameStyle == ServerGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Servers move:" << txt << std::endl;
+                #endif
+                server.Server_send(txt, flags);
+            }
+
+            if(GameStyle == LocalGame) {
+                //Local game
+                #if (USE_DEBUG == 1)
+                std::cout << "Local move:" << txt << std::endl;
+                #endif
+            }
+            /*
+             * Test if now turn for AI or remote
+             * if so, LocalLock = true;
+             * else LocalLock = false;
+             */
+
             GameBoard[x][y] = CurrentDiskColor;
             FlipDisks(x, y);
             ++discs_counter;
@@ -167,20 +259,23 @@ void Game::OnTileClicked(int x, int y)
             {
                 game_over = true;
                 discs_counter = 4;
-            } 
+            }
 
-            if(CurrentDiskColor == White)
+            if(ActivePlayer.GetPlayerNumber() == 1) {
+                CurrentDiskColor = White;
+                ActivePlayer = Player2;
+            } else {
                 CurrentDiskColor = Black;
-            else
-                CurrentDiskColor = White; 
+                ActivePlayer = Player1;
+            }
             if (showHint)
                 UpdateHintMask();
-        }  
+        }
         else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
         {
            game_over = true;
            discs_counter = 4;
-        }     
+        }
     }
 }*/
 
@@ -208,20 +303,20 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
     // creates a window with no visible frames
     ImGui::Begin("Othello ", nullptr, ImGuiWindowFlags_NoDecoration);
     {
-        ImDrawList* drawList = ImGui::GetWindowDrawList(); 
-       
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
         // draw score discs
         drawList->AddCircleFilled(ImVec2(320, 30), diskRadius * 0.75, diskColorBlack, 30);
         drawList->AddCircleFilled(ImVec2(640, 30), diskRadius * 0.75, diskColorWhite, 30);
 
-        ImGui::Dummy(ImVec2(300,45)); 
+        ImGui::Dummy(ImVec2(300,45));
         ImGui::Spacing();
         ImGui::SameLine(315, 0);
        // ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.updateBlackScore()/*scoreWhite*/);
         ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.scoreBlack/*scoreWhite*/);
         ImGui::SameLine(635, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "%02d", wPlayer.scoreWhite/*scoreBlack*/);
-        
+
         //Draw player turn disc
         ImGui::SameLine(420, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "TURN");
@@ -233,10 +328,10 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
         }
-        
-        ImGui::NewLine();     
+
+        ImGui::NewLine();
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
-        ImGui::Dummy(ImVec2(0,-1));  
+        ImGui::Dummy(ImVec2(0,-1));
         // draw the buttons
         for (int y = 0; y < boardTiles; ++y)
         {
@@ -313,19 +408,21 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
             txt = " ";
             dbMessage(txt, true);
             #endif
-
         }        
+      
         //draw combo dropbox to select game board size
         static int item = 0;
         int current_item = item;
         const char* items[] = {"8x8", "10x10", "12x12"};
-       
+
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
         ImGui::PushItemWidth(100);
         ImGui::SameLine(230, 0);
-        ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items)); 
+        ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
+
+        if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
         if(current_item != item)
         {
             switch(item)
@@ -364,8 +461,9 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                wPlayer.updateGameHint(HintMask);
             }
         }
-        
-        // Draw Reset button  
+        }
+
+        // Draw Reset button
          ImGui::SameLine(450, 0);
         if(ImGui::Button("RESET"))
         {
@@ -561,7 +659,7 @@ void Game::UpdateHintMask(void)
     {
         passed_gameTurn_counter = 0;
     }
-    
+
 }
 */
 void Game::update(/*Game object*/)
@@ -582,8 +680,8 @@ void Game::update(/*Game object*/)
     ticksLast = ticksNow;
 
     OthelloFrame(deltaTime);
-    OthelloRender(width, height/*, object*/);
-        
+    OthelloRender(width, height);
+
     // let imgui handle rest of the rendering process
     ImGui::Render();
 
@@ -604,6 +702,12 @@ void Game::update(/*Game object*/)
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -625,6 +729,12 @@ bool Game::changeBoardsize()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -658,11 +768,11 @@ bool Game::changeBoardsize()
         else if(scoreBlack == scoreWhite)
         {
             std::cout << "Draw, No winner!" << "\n";
-        }  
+        }
         else
         {
             std::cout << "Winner is White!" << "\n";
-        }  
+        }
         return true;
     }
     return false;
@@ -718,6 +828,15 @@ bool Game::gameRunning()
 
 void Game::clean()
 {
+    /*
+     * Shut down possible client or server!
+     */
+    if(GameStyle == ClientGame) {
+        client.Client_Disconnect();
+    }
+    if(GameStyle == ServerGame) {
+        server.Server_Stop();
+    }
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui::DestroyContext();
@@ -746,10 +865,231 @@ void Game::updatePlayerTurn()
             playerTurn = White;
             CurrentDiskColor = White;
         }
-        
+
         pass_turn = false;
     }
-    
+
+}
+
+void Game::HandleRemoteMessages()
+{
+    uint16_t flags = 0;
+    str text = "";
+    int x = 0;
+    int y = 0;
+    bool new_msg = false;
+
+    //Messages from game master server
+    if(client.Client_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    //Messages from remote player, which is client
+    if(server.Server_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    if(new_msg == false)
+        return;
+
+    /*
+     * All messages are handled here
+     */
+    std::cout << "" << std::endl;
+    if((flags & GAME_COMMAND) > 0) {
+        //Game command
+        #if (USE_DEBUG == 1)
+        std::cout << "Game command [" << text << "]" << std::endl;
+        #endif
+        if(text == CMND_REST_GAME) {
+            //Game master calls reset the game
+            #if (USE_DEBUG == 1)
+            std::cout << "Game master reset game!" << std::endl;
+            #endif
+        } else if(text == CMND_INIT_8X8) {
+            //Set board to 8 x 8 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 8x8" << std::endl;
+            #endif
+        } else if( text == CMND_INIT_10X10) {
+            //Set board to 10 x 10 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 10x10" << std::endl;
+            #endif
+        } else if( text == CMND_INIT_12X12) {
+            //Set board to 12 x 12 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 12x12" << std::endl;
+            #endif
+        } else if( text == CMND_P1_LOCAL) {
+            //Set player 1 as local
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is local player" << std::endl;
+            #endif
+        } else if( text == CMND_P1_REMOTE) {
+            //Set player 1 as remote
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is remote player" << std::endl;
+            #endif
+        } else if( text == CMND_P1_HUMAN) {
+            //Set player 1 as human
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is human" << std::endl;
+            #endif
+        } else if( text == CMND_P1_AI) {
+            //Set player 1 as AI
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is AI" << std::endl;
+            #endif
+        } else if( text == CMND_P2_LOCAL) {
+            //Set player 2 as local
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is local player" << std::endl;
+            #endif
+        } else if( text == CMND_P2_REMOTE) {
+            //Set player 2 as remote
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is remote player" << std::endl;
+            #endif
+        } else if( text == CMND_P2_HUMAN) {
+            //Set player 2 as human
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is human" << std::endl;
+            #endif
+        } else if( text == CMND_P2_AI) {
+            //Set player 2 as AI
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is AI" << std::endl;
+            #endif
+        } else {
+            //Unknown command!
+            std::cout << "ERROR! Unknown command [" << text << "]" << std::endl;
+        }
+        return;
+    }
+
+    if((flags & AI_FLAG) > 0) {
+        //Where AI want this message to sended?
+        #if (USE_DEBUG == 1)
+        std::cout << "AI message: " << text << std::endl;
+        #endif
+        //What we do with this in this state of game?
+        return;
+    }
+
+    //if((flags & AI_MOVE) > 0) {
+    //    //Use this, if AI-moves are handled diffrrently from humans moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "AI move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    //if((flags & HUMAN_MOVE) > 0) {
+    //    //Use this, if humans moves are handled diffrrently from AI-moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "Human move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    if((flags & (AI_MOVE | HUMAN_MOVE)) > 0) {
+        //Use this if human and AI move handling are not different
+        //Check move data and call 'Game::OnTileClicked(int x, int y)'
+        if(ParseMoveString(text, x, y) == 0) {
+            #if (USE_DEBUG == 1)
+            std::cout << "Move " << text << std::endl;
+            #endif
+            OnTileClicked(x, y);
+        } else {
+            #if (USE_DEBUG == 1)
+            std::cout << "Move data " << text << " was illegal!" << std::endl;
+            #endif
+            //How we handle illegal move?
+            //Other than send message of illegal move (HUMAN_ILLEGAL_MOVE or AI_ILLEGAL_MOVE)
+        }
+        return;
+    }
+    if((flags & (AI_ILLEGAL_MOVE | HUMAN_ILLEGAL_MOVE)) > 0) {
+        //Illegal move, we must synch game tables
+        std::cout << "AI or human made illegal move! " << text << std::endl;
+        //How we handle illegal move and move history?
+        return;
+    }
+
+    if((flags & CHAT_TEXT) > 0) {
+        //Where we print chat-text?
+        #if (USE_DEBUG == 1)
+        std::cout << "Chat [" << text << "]." << std::endl;
+        #endif
+        //Send text to textbox
+        return;
+    }
+
+    if((flags & RESYNCH_GAMETABLE) > 0) {
+        //We get other sides gametable to overwrite this ones
+        #if (USE_DEBUG == 1)
+        std::cout << "Gameboard resynch, we write GameBoard with following data: " << text << std::endl;
+        #endif
+        return;
+    }
+
+    if((flags & HUMAN_SOMETHING) > 0) {
+        //For future use of human players message
+        #if (USE_DEBUG == 1)
+        std::cout << "Messagetype HUMAN_SOMETHING, text:" << text << std::endl;
+        #endif
+        return;
+    }
+
+    if((flags & AI_SOMETHING) > 0) {
+        //For future use of AI players message
+        #if (USE_DEBUG == 1)
+        std::cout << "Messagetype AI_SOMETHING, text:" << text << std::endl;
+        #endif
+        return;
+    }
+
+    //If we get here, we got something wrong with message
+    std::ios_base::fmtflags f(std::cout.flags());
+    std::cout << "Unknown parameters in message!" << std::endl;
+    std::cout << "Text [" << text << "]" << std::endl;
+    std::cout << "Flags = " << std::uppercase << std::showbase << std::hex << flags << std::endl;
+    std::cout << std::endl;
+    std::cout.flags(f);
+}
+
+int Game::ParseMoveString(const str text, int& x, int& y)
+{
+    str_vector test = {};
+    str temp;
+    int i;
+    temp = "";
+    for(i = 0; i < text.length(); ++i) {
+        if(text[i] == ' ')
+            continue;
+        if(text[i] == ',') {
+            test.push_back(temp);
+            temp = "";
+        } else 
+            temp += text[i];
+    }
+
+    if(test.size() != 2)
+        return -1;
+
+    try
+    {
+        x = std::stoi(test[0]);
+        y = std::stoi(test[1]);
+    }
+    catch(std::invalid_argument const &e)
+    {
+        std::cout << "Not valid numbers! [" << test[0] << "] or [" << test[1] << "]" << std::endl;
+        return -1;
+    }
+    if((x >= boardTiles) || (y >= boardTiles))
+        return -1;
+
+    return 0;
 }
 */
 
@@ -761,4 +1101,3 @@ void dbMessage(const std::string &s, bool crlf)
         std::cout << std::endl;
 }
 #endif
-

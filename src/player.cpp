@@ -1,3 +1,9 @@
+/*
+ * class Player
+ * ver 0.01
+ * This is just for compiler to prevent errors
+ */
+
 #include "player.h"
 #include "othello.h"
 
@@ -16,7 +22,9 @@ Player::Player(/*parametres*/):
             reset_game(false),
             pass_turn(false),
             show_hint(true),
-            game_over(false)            
+            game_over(false),
+            PlayerColor(EMPTY),    //Must change in GUI
+            PlayerType(-1)        //Must change in GUI
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
@@ -107,6 +115,8 @@ bool Player::reset_Game()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = BLACK;
+        PlayerColor = EMPTY;
+        PlayerType = -1;
         return true;
     }
     return false;
