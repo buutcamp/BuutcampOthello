@@ -469,7 +469,6 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
             }
         }
         }
-        }
 
         // Draw Reset button
          ImGui::SameLine(450, 0);
