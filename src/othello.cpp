@@ -11,16 +11,11 @@ std::string txt;
 
 std::string ver_txt = "ver 0.25";
 
-//Client and server
-//#ifdef SERVER_MODULE_IN_USE
-//class Server server();
-//#endif
-//#ifdef CLIENT_MODULE_IN_USE
-//class Client client();
-//#endif
-
-
-Game::Game(int diskColor) :
+/*
+ * class Game
+ */
+Game::Game(int diskColor, int game_style) :
+            GameStyle(game_style),
             diskRadius(29),
             tileSize(64),
             boardTiles(BOARD_TILES),
@@ -50,9 +45,22 @@ Game::Game(int diskColor) :
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
+                if(game_style == ClientGame)
+                    client;
+                if(game_style == ServerGame)
+                    server;
+                Player1;
+                Player2;
+                ActivePlayer = Player1;
+                //AI(oBoard, Black);
             }
 
-Game::~Game() {}
+Game::~Game()
+{
+    /*
+     * Must we now put here something, we have so many sub-classes in same run?
+     */
+}
 
 // Window intialization
 void Game::InitSdl()
@@ -122,17 +130,38 @@ void Game::OthelloInit()
     /*
      * Client initialize and connect to server
      */
+    if(GameStyle == ClientGame) {
+        if(client.Client_Connect() == 0) {
+            //Client connected
+            #if (USE_DEBUG == 1)
+            std::cout << "Client found server." << std::endl;
+            #endif
+        } else {
+            //Could not connect to server!
+            std::cout << "Couldn't connect to server!" << std::endl;
+        }
+    }
 
     /*
      * Server initialize and start listening
      */
-    Server_Initialize();
-    Server_Start(PORT);
+    if(GameStyle == ServerGame) {
+        if(server.Server_Start(PORT) == 0) {
+            //Server started and listening
+            #if (USE_DEBUG == 1)
+            std::cout << "Server is listening port:" << PORT << std::endl;
+            #endif
+        } else {
+            //Could not start server!
+            std::cout << "Couldn't start server!" << std::endl;
+        }
+    }
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
 void Game::OthelloFrame(float deltaTime)
 {
+    //std::cout << "Delta frame:" << deltaTime << std::endl;
 }
 
 // called when a tile was clicked
@@ -160,7 +189,7 @@ void Game::OnTileClicked(int x, int y)
     if(GameBoard[x][y] == Empty) {
         //Only Empty is allowed
         if(TestPosition(x, y) > 0) {
-            if(playerTurn == White)
+            if(ActivePlayer.PlayerColor == White)
             {
                 scoreWhite += (TestPosition(x, y) + 1);
                 scoreBlack -= TestPosition(x, y);
@@ -175,15 +204,32 @@ void Game::OnTileClicked(int x, int y)
 
             //Set flags, who send this move
             flags = 0;
-            //flags |= AI_MOVE;
-            //flags |= HUMAN_MOVE;
+            if(ActivePlayer.PlayerType == Human_Local || ActivePlayer.PlayerType == Human_Remote)
+                flags |= HUMAN_MOVE;
+            if(ActivePlayer.PlayerType == AI_Local || ActivePlayer.PlayerType == AI_Remote)
+                flags |= AI_MOVE;
             //Make message from click position
             txt = std::to_string(x) + "," + std::to_string(y);
-            //client.PutMessage(txt, flags);
-            Client_PutMessage(txt, flags);
-            //server.PutMessage(txt, flags);
-            Server_PutMessage(txt, flags);
 
+            if(GameStyle == ClientGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Clients move:" << txt << std::endl;
+                #endif
+                client.Client_send(txt, flags);
+            }
+            if(GameStyle == ServerGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Servers move:" << txt << std::endl;
+                #endif
+                server.Server_send(txt, flags);
+            }
+
+            if(GameStyle == LocalGame) {
+                //Local game
+                #if (USE_DEBUG == 1)
+                std::cout << "Local move:" << txt << std::endl;
+                #endif
+            }
             /*
              * Test if now turn for AI or remote
              * if so, LocalLock = true;
@@ -199,10 +245,13 @@ void Game::OnTileClicked(int x, int y)
                 discs_counter = 4;
             }
 
-            if(CurrentDiskColor == White)
-                CurrentDiskColor = Black;
-            else
+            if(ActivePlayer.GetPlayerNumber() == 1) {
                 CurrentDiskColor = White;
+                ActivePlayer = Player2;
+            } else {
+                CurrentDiskColor = Black;
+                ActivePlayer = Player1;
+            }
             if (showHint)
                 UpdateHintMask();
         }
@@ -346,30 +395,32 @@ void Game::OthelloRender(int width, int height)
         ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
-       if(current_item != item)
+        if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
+        if(current_item != item)
         {
             switch(item)
-             {
-                case 0:
-                    current_item = 0;
-                    boardTiles = BOARD_TILES;
-                    break;
-                case 1:
-                    current_item = 1;
-                    boardTiles = BOARD_TILES + 2;
-                    break;
-                case 2:
-                    current_item = 2;
-                    boardTiles = BOARD_TILES + 4;
-                    break;
-             }
-             boardSizeChanged = true;
-             GameBoard.clear();
-             GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-            if (showHint)
             {
-                HintMask.clear();
-                HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                    case 0:
+                        current_item = 0;
+                        boardTiles = BOARD_TILES;
+                        break;
+                    case 1:
+                        current_item = 1;
+                        boardTiles = BOARD_TILES + 2;
+                        break;
+                    case 2:
+                        current_item = 2;
+                        boardTiles = BOARD_TILES + 4;
+                        break;
+                }
+                boardSizeChanged = true;
+                GameBoard.clear();
+                GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+                if (showHint)
+                {
+                    HintMask.clear();
+                    HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                }
             }
         }
 
@@ -576,10 +627,12 @@ bool Game::resetGame()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
-        /*
-         * Send message to other player if not local game
-         * Update new gameboard to remote site
-         */
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -593,10 +646,12 @@ bool Game::changeBoardsize()
         scoreWhite = 2;
         scoreBlack = 2;
         playerTurn = Black;
-        /*
-         * Send message to other player if not local game
-         * Update new gameboard to remote site
-         */
+        if(GameStyle == ServerGame) {
+            /*
+             * Send message to other player if not local game
+             * Update new gameboard to remote site
+             */
+        }
         return true;
     }
     return false;
@@ -657,6 +712,12 @@ void Game::clean()
     /*
      * Shut down possible client or server!
      */
+    if(GameStyle == ClientGame) {
+        client.Client_Disconnect();
+    }
+    if(GameStyle == ServerGame) {
+        server.Server_Stop();
+    }
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui::DestroyContext();
@@ -688,6 +749,227 @@ void Game::updatePlayerTurn()
         pass_turn = false;
     }
 
+}
+
+void Game::HandleRemoteMessages()
+{
+    uint16_t flags = 0;
+    str text = "";
+    int x = 0;
+    int y = 0;
+    bool new_msg = false;
+
+    //Messages from game master server
+    if(client.Client_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    //Messages from remote player, which is client
+    if(server.Server_recv(text, flags) == true) {
+        //We have receved new message from remote player
+        new_msg = true;
+    }
+    if(new_msg == false)
+        return;
+
+    /*
+     * All messages are handled here
+     */
+    std::cout << "" << std::endl;
+    if((flags & GAME_COMMAND) > 0) {
+        //Game command
+        #if (USE_DEBUG == 1)
+        std::cout << "Game command [" << text << "]" << std::endl;
+        #endif
+        if(text == CMND_REST_GAME) {
+            //Game master calls reset the game
+            #if (USE_DEBUG == 1)
+            std::cout << "Game master reset game!" << std::endl;
+            #endif
+        } else if(text == CMND_INIT_8X8) {
+            //Set board to 8 x 8 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 8x8" << std::endl;
+            #endif
+        } else if( text == CMND_INIT_10X10) {
+            //Set board to 10 x 10 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 10x10" << std::endl;
+            #endif
+        } else if( text == CMND_INIT_12X12) {
+            //Set board to 12 x 12 mode
+            #if (USE_DEBUG == 1)
+            std::cout << "Board set to 12x12" << std::endl;
+            #endif
+        } else if( text == CMND_P1_LOCAL) {
+            //Set player 1 as local
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is local player" << std::endl;
+            #endif
+        } else if( text == CMND_P1_REMOTE) {
+            //Set player 1 as remote
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is remote player" << std::endl;
+            #endif
+        } else if( text == CMND_P1_HUMAN) {
+            //Set player 1 as human
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is human" << std::endl;
+            #endif
+        } else if( text == CMND_P1_AI) {
+            //Set player 1 as AI
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 1 is AI" << std::endl;
+            #endif
+        } else if( text == CMND_P2_LOCAL) {
+            //Set player 2 as local
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is local player" << std::endl;
+            #endif
+        } else if( text == CMND_P2_REMOTE) {
+            //Set player 2 as remote
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is remote player" << std::endl;
+            #endif
+        } else if( text == CMND_P2_HUMAN) {
+            //Set player 2 as human
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is human" << std::endl;
+            #endif
+        } else if( text == CMND_P2_AI) {
+            //Set player 2 as AI
+            #if (USE_DEBUG == 1)
+            std::cout << "Player 2 is AI" << std::endl;
+            #endif
+        } else {
+            //Unknown command!
+            std::cout << "ERROR! Unknown command [" << text << "]" << std::endl;
+        }
+        return;
+    }
+
+    if((flags & AI_FLAG) > 0) {
+        //Where AI want this message to sended?
+        #if (USE_DEBUG == 1)
+        std::cout << "AI message: " << text << std::endl;
+        #endif
+        //What we do with this in this state of game?
+        return;
+    }
+
+    //if((flags & AI_MOVE) > 0) {
+    //    //Use this, if AI-moves are handled diffrrently from humans moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "AI move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    //if((flags & HUMAN_MOVE) > 0) {
+    //    //Use this, if humans moves are handled diffrrently from AI-moves
+    //    //Check move data and call 'Game::OnTileClicked(int x, int y)'
+    //    std::cout << "Human move " << text << std::endl;
+    //    OnTileClicked(x, y);
+    //    return;
+    //}
+    if((flags & (AI_MOVE | HUMAN_MOVE)) > 0) {
+        //Use this if human and AI move handling are not different
+        //Check move data and call 'Game::OnTileClicked(int x, int y)'
+        if(ParseMoveString(text, x, y) == 0) {
+            #if (USE_DEBUG == 1)
+            std::cout << "Move " << text << std::endl;
+            #endif
+            OnTileClicked(x, y);
+        } else {
+            #if (USE_DEBUG == 1)
+            std::cout << "Move data " << text << " was illegal!" << std::endl;
+            #endif
+            //How we handle illegal move?
+            //Other than send message of illegal move (HUMAN_ILLEGAL_MOVE or AI_ILLEGAL_MOVE)
+        }
+        return;
+    }
+    if((flags & (AI_ILLEGAL_MOVE | HUMAN_ILLEGAL_MOVE)) > 0) {
+        //Illegal move, we must synch game tables
+        std::cout << "AI or human made illegal move! " << text << std::endl;
+        //How we handle illegal move and move history?
+        return;
+    }
+
+    if((flags & CHAT_TEXT) > 0) {
+        //Where we print chat-text?
+        #if (USE_DEBUG == 1)
+        std::cout << "Chat [" << text << "]." << std::endl;
+        #endif
+        //Send text to textbox
+        return;
+    }
+
+    if((flags & RESYNCH_GAMETABLE) > 0) {
+        //We get other sides gametable to overwrite this ones
+        #if (USE_DEBUG == 1)
+        std::cout << "Gameboard resynch, we write GameBoard with following data: " << text << std::endl;
+        #endif
+        return;
+    }
+
+    if((flags & HUMAN_SOMETHING) > 0) {
+        //For future use of human players message
+        #if (USE_DEBUG == 1)
+        std::cout << "Messagetype HUMAN_SOMETHING, text:" << text << std::endl;
+        #endif
+        return;
+    }
+
+    if((flags & AI_SOMETHING) > 0) {
+        //For future use of AI players message
+        #if (USE_DEBUG == 1)
+        std::cout << "Messagetype AI_SOMETHING, text:" << text << std::endl;
+        #endif
+        return;
+    }
+
+    //If we get here, we got something wrong with message
+    std::ios_base::fmtflags f(std::cout.flags());
+    std::cout << "Unknown parameters in message!" << std::endl;
+    std::cout << "Text [" << text << "]" << std::endl;
+    std::cout << "Flags = " << std::uppercase << std::showbase << std::hex << flags << std::endl;
+    std::cout << std::endl;
+    std::cout.flags(f);
+}
+
+int Game::ParseMoveString(const str text, int& x, int& y)
+{
+    str_vector test = {};
+    str temp;
+    int i;
+    temp = "";
+    for(i = 0; i < text.length(); ++i) {
+        if(text[i] == ' ')
+            continue;
+        if(text[i] == ',') {
+            test.push_back(temp);
+            temp = "";
+        } else 
+            temp += text[i];
+    }
+
+    if(test.size() != 2)
+        return -1;
+
+    try
+    {
+        x = std::stoi(test[0]);
+        y = std::stoi(test[1]);
+    }
+    catch(std::invalid_argument const &e)
+    {
+        std::cout << "Not valid numbers! [" << test[0] << "] or [" << test[1] << "]" << std::endl;
+        return -1;
+    }
+    if((x >= boardTiles) || (y >= boardTiles))
+        return -1;
+
+    return 0;
 }
 
 #if (USE_DEBUG == 1)
