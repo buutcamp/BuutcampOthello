@@ -22,28 +22,25 @@
 #include <algorithm>
 #include <unordered_map>
 #include "definet.h"
-#include "client.h"     //Not class, just subroutine
-#include "server.h"     //Not class, just subroutine
-
-
-//#ifdef SERVER_MODULE_IN_USE
-//#include "server.h"
-//#endif
-
-//#ifdef CLIENT_MODULE_IN_USE
-//#include "client.h"
-//#endif
+#include "client.h"     //class Client
+#include "server.h"     //class Server
+#include "player.h"     //class Player
+#include "ai.h"
+#include "board.h"
 
 /*
- * 
+ * class Game
  */
-
-enum pcs {Empty, White, Black, Hint};
-enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
-
 class Game {
+    Server server;
+    Client client;
+    Player Player1;
+    Player Player2;
+    OthelloHeuristic AI;
+    OthelloBoard board;
+
     public:
-        Game(int disk_color);
+        Game(int disk_color, int game_style);
         ~Game();
 
         void OthelloInit();
@@ -62,16 +59,20 @@ class Game {
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
+        Player ActivePlayer;
 
         int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
         int  TestPosition(const int x, const int y);
         void FlipDisks(const int x, const int y);
         void UpdateHintMask(void);
         bool LocalLock;
+        std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
+        std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
         const int diskRadius;
         const int tileSize;
+        const int GameStyle;
 
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
@@ -100,12 +101,15 @@ class Game {
         bool game_over;
         bool pass_turn;
 
+        void HandleRemoteMessages();
+        int ParseMoveString(const str text, int& x, int& y);
+
         SDL_Window* window;
         SDL_GLContext gl_context;
 };
 
+
 #if (USE_DEBUG == 1)
-#include <iostream>
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
 
@@ -128,4 +132,3 @@ class othelloBoard {
         void index2coord(int index, int &colNum, int &rowNum);// Helper function to convert board square index to coordinate strings
 };
 #endif      //end othello.h
-

@@ -2,7 +2,7 @@
  * Client
  * client.h
  * ver 0.20     //1st include to project
- * ver 0.25     //change from class to subroutine
+ * ver 0.25     //Client will be subclass for class Game
  */
 
 /* Sources
@@ -23,57 +23,48 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #include <string.h>
 #include <vector>
 #include <thread>       //https://en.cppreference.com/w/cpp/thread
+#include "othello.h"
 #include "definet.h"
 
 
 using str = std::string;
 using str_vector = std::vector<str>;
 
-//ver 0.25 change from class to subroutine
-//class Client {
-//    public:
-//        Client();
-//        ~Client();
-//        int  Connect();
-//        int  Disconnect();
-//        int  PutMessage(const str text, const uint16_t flags);
-//        bool GetMessage(str& text);
-//        uint16_t GetClientStatus();
-//        void Serving();
-//    private:
-//        struct cMsg {
-//            int         id;
-//            uint16_t    status;
-//            str         cMessage;
-//        };
-//        int message_id;
-//        std::vector<cMsg> MessagesIn;
-//        std::vector<cMsg> MessagesOut;
-//        struct sockaddr_in Server_addr;
-//        struct sockaddr_in Client_addr;
-//        int ServerSocket = 0;
-//        int ValRead = 0;
-//        int ServerPort = 8080;
-//        uint16_t ClStatus;
-//        bool isConnected;
-//        char buffer[1024];
-//        std::thread srv;
-//};
+class Game;
 
-//ver 0.25
-//Messages
-struct cMsg {
-    int         id;
-    uint16_t    status;
-    str         cMessage;
+class Client {
+    Game* game;
+
+    public:
+        Client();
+        ~Client();
+        int  Client_Connect();
+        int  Client_Disconnect();
+        int  Client_send(const str text, const uint16_t flags);
+        bool Client_recv(str& text, uint16_t& flags);
+        uint16_t GetClientStatus();
+        //void Client_Serving(uint16_t KillTime);
+        void Client_Serving();
+        int cMsg_size = sizeof(cMsg);
+    private:
+        //Messages
+        struct cMsg {
+            int         id;
+            uint16_t    status;
+            str         cMessage;
+        };
+        int Cl_message_id;
+        std::vector<cMsg> Cl_MessagesIn;
+        std::vector<cMsg> Cl_MessagesOut;
+        struct sockaddr_in Cl_Server_addr;
+        struct sockaddr_in Cl_Client_addr;
+        int Cl_ServerSocket = 0;
+        int Cl_ValRead = 0;
+        int Cl_ServerPort = 8080;
+        uint16_t ClStatus;
+        bool Cl_isConnected;
+        char Cl_buffer[1024];
+        std::thread Cl_srv;
 };
-void Client_Initialize();
-void Client_Close();
-int  Client_Connect();
-int  Client_Disconnect();
-int  Client_PutMessage(const str text, const uint16_t flags);
-bool Client_GetMessage(str& text);
-uint16_t GetClientStatus();
-void Client_Serving(uint16_t KillTime);
 
 #endif     //end _CLIENT_H_
