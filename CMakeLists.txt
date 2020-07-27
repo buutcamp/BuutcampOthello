@@ -21,7 +21,6 @@ set(OTHELLO_HEADERS
 	src/ai.h
 	src/board.h
 	src/definet.h
-	src/ai.h
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pthread")
