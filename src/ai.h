@@ -3,26 +3,35 @@
 
 #include <numeric>
 #include <unordered_set>
+#include <unordered_map>
+#include <list>
+#include <algorithm>
 #include "othello.h"
+#include "definet.h"
+#include "board.h"
 
-class othelloHeuristic {
+class OthelloHeuristic {
+    //Game* game;         //for main class functions call example: game->OnTileClicked(int x, int y);
+    OthelloBoard* board;
+
     public:
-        int evaluate(othelloBoard &board, int color);
-
+        OthelloHeuristic();
+        ~OthelloHeuristic();
+        int evaluate(OthelloBoard &board, int color);
     private:
         std::unordered_set<int> stableDiscs;
         std::unordered_map<int, std::list<int>> pMoves;
 
-        int utility(othelloBoard &board, int &color);
-        int discDifference(othelloBoard &board, int &color);
-        int mobility(othelloBoard &board, int &color);
-        int potentialMobility(othelloBoard &board, int color);
-        int playerPotentialMobility(othelloBoard &board, int color);
-        int stability(othelloBoard &board, int color);
-        void stableDiscsFromCorner(othelloBoard &board, int corner, int color);
-        int parity(othelloBoard &board);
-        int squareWeights(othelloBoard &board, int &color);
-        int corners(othelloBoard &board, int &color);
+        int utility(OthelloBoard &board, int &color);
+        int discDifference(OthelloBoard &board, int &color);
+        int mobility(OthelloBoard &board, int &color);
+        int potentialMobility(OthelloBoard &board, int color);
+        int playerPotentialMobility(OthelloBoard &board, int color);
+        int stability(OthelloBoard &board, int color);
+        void stableDiscsFromCorner(OthelloBoard &board, int corner, int color);
+        int parity(OthelloBoard &board);
+        int squareWeights(OthelloBoard &board, int &color);
+        int corners(OthelloBoard &board, int &color);
 };
 
 #endif // HEURISTIC_HPP
