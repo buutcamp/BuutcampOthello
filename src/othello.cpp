@@ -1101,7 +1101,6 @@ int Game::ParseMoveString(const str text, int& x, int& y)
 
     return 0;
 }
-*/
 
 
 #if (USE_DEBUG == 1)
