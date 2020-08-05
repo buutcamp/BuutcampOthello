@@ -3,6 +3,7 @@
  * server.cpp
  * ver 0.20     //1st include to project
  * ver 0.25     //Server will be subclass for class Game
+ * ver 1.00     No thread but serving inside class Game
  */
 
 #include "othello.h"
@@ -21,8 +22,6 @@
  *  shutdown to end read/write.
  *  close to releases data.
  */
-
-using namespace std::literals::chrono_literals;
 
 Server::Server()
 {
@@ -95,8 +94,6 @@ int Server::Server_Start(const int port)
     }
 
     Srv_isRunning = true;
-    //std::thread Server_srv(Server_Serving, 60000);
-    Server_srv = std::thread(&Server::Server_Serving, this);
     return 0;
 }
 
@@ -142,19 +139,11 @@ uint16_t Server::GetServerStatus()
     return SrvStatus;
 }
 
-/*
- * Message thread
- */
-//void Server::Server_Serving(uint16_t KillTime)
 void Server::Server_Serving()
 {
-    uint16_t KillTime = 60000;
     sMsg temp;
-    uint32_t KillSwitch;
 
-    KillSwitch = 0;
-    std::cout << "Server thread ID=" << std::this_thread::get_id() << std::endl;
-    while (Srv_isRunning)
+    if(Srv_isRunning == true)
     {
         Srv_ValRead = read(Srv_ClientSocket, Srv_buffer, 1024);
         if(Srv_ValRead < 0) {
@@ -163,7 +152,6 @@ void Server::Server_Serving()
             //std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
             memcpy(&temp, Srv_buffer, sMsg_size);
             Srv_MessagesIn.push_back(temp);
-            KillSwitch = 0;
         }
 
         if(!Srv_MessagesOut.empty()) {
@@ -171,13 +159,6 @@ void Server::Server_Serving()
             Srv_MessagesOut.erase(Srv_MessagesOut.begin());
             memcpy(Srv_buffer, (const unsigned char*)&temp, sMsg_size);
             send(Srv_ClientSocket, Srv_buffer, strlen(Srv_buffer), 0);
-            KillSwitch = 0;
         }
-        std::this_thread::sleep_for(1s);
-
-        //We don't want this run eternity here, so what kind time is long enough?
-        ++KillSwitch;
-        if(KillSwitch > KillTime)
-            break;
     }
 }
