@@ -50,7 +50,7 @@ Game::Game(int diskColor, int game_style) :
                     server;
                 wPlayer;
                 bPlayer;
-                ActivePlayer = wPlayer;
+                ActivePlayer = bPlayer;
                 //AI(oBoard, White);
             }
 
@@ -107,14 +107,10 @@ void Game::OthelloInit()
     GameBoard[boardTiles / 2][boardTiles / 2] = White;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
-      
+
     CurrentDiskColor = White; // Player with White discs begin game
+
     }
-    //https://www.mastersofgames.com/rules/reversi-othello-rules.htm
-    /*
-     Player's toss a coin to decide who will play white - white moves first.
-     Each turn, the player places one piece on the board with their colour facing up.
-    */
     
     bPlayer.initializeGameBoard();
     wPlayer.initializeGameBoard();
@@ -156,11 +152,15 @@ void Game::OthelloInit()
         if(client.Client_Connect() == 0) {
             //Client connected
             #if (USE_DEBUG == 1)
-            std::cout << "Client found server." << std::endl;
+            txt = "Client found server.";
+            dbMessage(txt, true);
             #endif
         } else {
             //Could not connect to server!
             std::cout << "Couldn't connect to server!" << std::endl;
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
         }
     }
 
@@ -171,11 +171,15 @@ void Game::OthelloInit()
         if(server.Server_Start(PORT) == 0) {
             //Server started and listening
             #if (USE_DEBUG == 1)
-            std::cout << "Server is listening port:" << PORT << std::endl;
+            txt = "Server is listening port:";
+            dbMessage(txt, true);
             #endif
         } else {
             //Could not start server!
             std::cout << "Couldn't start server!" << std::endl;
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
         }
     }
 }
@@ -184,7 +188,20 @@ void Game::OthelloInit()
 void Game::OthelloFrame(float deltaTime)
 {
     //std::cout << "Delta frame:" << deltaTime << std::endl;
+    if(GameStyle == LocalGame) {
+        //We have local game
+    } else if(GameStyle == ClientGame) {
+        client.Client_Serving();
+        HandleRemoteMessages();
+    } else if(GameStyle == ServerGame) {
+        server.Server_Serving();
+        HandleRemoteMessages();
+    } else {
+        //Error in GameStyle!!!
+        std::cout << "Unknown value in GameStyle = " << GameStyle << std::endl;
+    }
 }
+
 /*
 // called when a tile was clicked
 

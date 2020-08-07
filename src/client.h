@@ -1,8 +1,9 @@
 /*
  * Client
  * client.h
- * ver 0.20     //1st include to project
- * ver 0.25     //Client will be subclass for class Game
+ * ver 0.20     1st include to project
+ * ver 0.25     Client will be subclass for class Game
+ * ver 1.00     No thread but serving inside class Game
  */
 
 /* Sources
@@ -22,7 +23,7 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #include <unistd.h>
 #include <string.h>
 #include <vector>
-#include <thread>       //https://en.cppreference.com/w/cpp/thread
+//#include <thread>       //https://en.cppreference.com/w/cpp/thread
 #include "othello.h"
 #include "definet.h"
 
@@ -66,7 +67,7 @@ class Client {
         uint16_t ClStatus;
         bool Cl_isConnected;
         char Cl_buffer[1024];
-        std::thread Cl_srv;
+        //std::thread Cl_srv;
 };
 
 #endif     //end _CLIENT_H_
