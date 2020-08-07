@@ -104,7 +104,6 @@ class Game {
         bool showHint;
         bool game_over;
         //bool pass_turn;
-
         void HandleRemoteMessages();
         int ParseMoveString(const str text, int& x, int& y);
 
@@ -118,5 +117,4 @@ class Game {
 #if (USE_DEBUG == 1)
 void dbMessage(const std::string &s, bool crlf);
 #endif // end if USE_DEBUG
-
 #endif      //end othello.h

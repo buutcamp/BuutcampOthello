@@ -107,7 +107,9 @@ void Game::OthelloInit()
     GameBoard[boardTiles / 2][boardTiles / 2] = White;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
-    CurrentDiskColor = Black; // Player with White discs begin game
+
+    CurrentDiskColor = White; // Player with White discs begin game
+
     }
     
     bPlayer.initializeGameBoard();
@@ -199,6 +201,107 @@ void Game::OthelloFrame(float deltaTime)
         std::cout << "Unknown value in GameStyle = " << GameStyle << std::endl;
     }
 }
+
+/*
+// called when a tile was clicked
+
+//void Game::OnTileClicked(int x, int y)
+//{
+//    #if (USE_DEBUG == 1)
+//    txt = "Button X:" + std::to_string(x) + " Y:" + std::to_string(y);
+//    dbMessage(txt, true);
+//    #endif
+//
+//    str txt;
+//    uint16_t flags;
+//    static int discs_counter = 4; // total number of discs placed on the board
+//
+//    /*
+//     * 1st test if valid to make move
+//     * if (LocalLock == true) {
+//     *     if we are here from local player => exit
+//     * }
+//     * AI and remote games must lock local player out
+//     * until they have moves made
+//     */
+//
+//    //Game mask update
+//    if(GameBoard[x][y] == Empty) {
+//        //Only Empty is allowed
+//        if(TestPosition(x, y) > 0) {
+//            if(ActivePlayer.PlayerColor == White)
+//            {
+//                scoreWhite += (TestPosition(x, y) + 1);
+//                scoreBlack -= TestPosition(x, y);
+//                playerTurn = Black;
+//            }
+//            else
+//            {
+//                scoreBlack += (TestPosition(x, y) + 1);
+//                scoreWhite -= TestPosition(x, y);
+//                playerTurn = White;
+//            }
+//
+//            //Set flags, who send this move
+//            flags = 0;
+//            if(ActivePlayer.PlayerType == Human_Local || ActivePlayer.PlayerType == Human_Remote)
+//                flags |= HUMAN_MOVE;
+//            if(ActivePlayer.PlayerType == AI_Local || ActivePlayer.PlayerType == AI_Remote)
+//                flags |= AI_MOVE;
+//            //Make message from click position
+//            txt = std::to_string(x) + "," + std::to_string(y);
+//
+//            if(GameStyle == ClientGame) {
+//                #if (USE_DEBUG == 1)
+//                std::cout << "Clients move:" << txt << std::endl;
+//                #endif
+//                client.Client_send(txt, flags);
+//            }
+//            if(GameStyle == ServerGame) {
+//                #if (USE_DEBUG == 1)
+//                std::cout << "Servers move:" << txt << std::endl;
+//                #endif
+//                server.Server_send(txt, flags);
+//            }
+//
+//            if(GameStyle == LocalGame) {
+//                //Local game
+//                #if (USE_DEBUG == 1)
+//                std::cout << "Local move:" << txt << std::endl;
+//                #endif
+//            }
+//            /*
+//             * Test if now turn for AI or remote
+//             * if so, LocalLock = true;
+//             * else LocalLock = false;
+//             */
+//
+//            GameBoard[x][y] = CurrentDiskColor;
+//            FlipDisks(x, y);
+//            ++discs_counter;
+//            if(discs_counter == (boardTiles * boardTiles)) // all discs placed on gameboard
+//            {
+//                game_over = true;
+//                discs_counter = 4;
+//            }
+//
+//            if(ActivePlayer.GetPlayerNumber() == 1) {
+//                CurrentDiskColor = White;
+//                ActivePlayer = Player2;
+//            } else {
+//                CurrentDiskColor = Black;
+//                ActivePlayer = Player1;
+//            }
+//            if (showHint)
+//                UpdateHintMask();
+//        }
+//        else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
+//        {
+//           game_over = true;
+//           discs_counter = 4;
+//        }
+//    }
+//}
 
 bool Game::OthelloButton(int x, int y)
 {
@@ -671,35 +774,34 @@ bool Game::changeBoardsize()
     return false;
 }
 
-//bool Game::gameOver()
-//{
-//   if(game_over)
-//    {
-//        game_over = false;
-//       // if(Play_more)
-//       //reset_game = true;
-//        // reset_game();
-//       // scoreWhite = 2;
-//        //scoreBlack = 2;
-//        //else
-//        // close game --- call main.cpp on if events
-//
-//        std::cout << "" << "GAME OVER!!" << "\n";
-//        if(scoreBlack > scoreWhite)
-//            std::cout << "Winner is Black!" << "\n";
-//        else if(scoreBlack == scoreWhite)
-//        {
-//            std::cout << "Draw, No winner!" << "\n";
-//        }
-//        else
-//        {
-//            std::cout << "Winner is White!" << "\n";
-//        }
-//        return true;
-//    }
-//    return false;
-//}
+/*bool Game::gameOver()
+{
+   if(bPlayer.game_Over() || wPlayer.game_Over())
+    {
+       // if(Play_more)
+       //reset_game = true;
+        // reset_game();
+       // scoreWhite = 2;
+        //scoreBlack = 2;
+        //else
+        // close game --- call main.cpp on if events
 
+        std::cout << "" << "GAME OVER!!" << "\n";
+        if(bPlayer.updateBlackScore() > wPlayer.updateWhiteScore())
+            std::cout << "Winner is Black!" << "\n";
+        else if(bPlayer.updateBlackScore() == wPlayer.updateWhiteScore())
+        {
+            std::cout << "Game is Draw, No winner!" << "\n";
+        }  
+        else
+        {
+            std::cout << "Winner is White!" << "\n";
+        }  
+        return true;
+    }
+    return false;
+}
+*/
 bool Game::gameOver()
 {
    if(bPlayer.game_Over() || wPlayer.game_Over())
@@ -727,6 +829,7 @@ bool Game::gameOver()
     }
     return false;
 }
+
 void Game::handleEvents()
 {
     SDL_Event event;
@@ -774,24 +877,26 @@ void Game::updateScore()
 }
 */
 
-//void Game::updatePlayerTurn()
-//{
-//    if(pass_turn == true)
-//    {   if(CurrentDiskColor == White)
-//        {
-//            playerTurn = Black;
-//            CurrentDiskColor = Black;
-//        }
-//        else
-//        {
-//            playerTurn = White;
-//            CurrentDiskColor = White;
-//        }
-//
-//        pass_turn = false;
-//    }
-//
-//}
+/*
+void Game::updatePlayerTurn()
+{
+    if(pass_turn == true)
+    {   if(CurrentDiskColor == White)
+        {
+            playerTurn = Black;
+            CurrentDiskColor = Black;
+        }
+        else
+        {
+            playerTurn = White;
+            CurrentDiskColor = White;
+        }
+
+        pass_turn = false;
+    }
+
+}
+*/
 
 void Game::HandleRemoteMessages()
 {

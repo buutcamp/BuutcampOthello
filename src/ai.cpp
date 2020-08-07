@@ -13,6 +13,7 @@ ai::~ai()
 }
 
 //1
+
 int ai::evaluate(OthelloBoard &board, int color) {
     if (board.terminalState()) {
         return 100000*utility(board, color);
@@ -46,6 +47,7 @@ int ai::evaluate(OthelloBoard &board, int color) {
 }//1
 
 //2
+
 int ai::utility(OthelloBoard &board, int &color) {
     int util = std::accumulate(board.positions.begin(),
             board.positions.end(), 0);
@@ -94,6 +96,7 @@ int ai::mobility(OthelloBoard &board, int &color) {
 }//4
 
 //5
+
 int ai::potentialMobility(OthelloBoard &board, int color) {
     int myPotentialMobility = playerPotentialMobility(board, color);
     int opponentPotentialMobility = playerPotentialMobility(board, -color);
@@ -103,6 +106,7 @@ int ai::potentialMobility(OthelloBoard &board, int color) {
 }//5
 
 //6
+
 int ai::playerPotentialMobility(OthelloBoard &board, int color) {
     std::vector<int> boardInterior = {18, 19, 20, 21,
                                       26, 27, 28, 29,
