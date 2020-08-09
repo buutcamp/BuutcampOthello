@@ -68,17 +68,18 @@ void Player::onGameOver()
 
 bool Player::applyAI(int x, int y)
 {
-    /* 
+    
     ai player_algorithm;
     OthelloBoard board;
     
     int x_y_in_1D = convertXY_to1D(x,y);
+    //std::cout <<"x y linear" << x_y_in_1D << "\n";
     int color = getDiscColor(); 
-    int disc_position = ai.evaluate(board, color); // board.cpp??
-
+    int disc_position = player_algorithm.evaluate(board, color); // board.cpp??
+    
     if (disc_position ==  x_y_in_1D)
         return true;
-*/
+
     return false;
 }
 
@@ -91,7 +92,7 @@ int Player::getDiscColor()
 }
 int Player::convertXY_to1D(int x, int y)
 {
-    /* code to covert from (x,y) or (y,x) to a linear value */
+    return 8 * y + x;
 }
 
 int Player::setCurrentDiskColor()

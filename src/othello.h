@@ -74,7 +74,7 @@ class Game {
         std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
-        const int GameStyle;
+        int GameStyle;
         const int diskRadius;
         const int tileSize;
         

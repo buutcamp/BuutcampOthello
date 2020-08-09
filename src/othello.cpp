@@ -163,6 +163,9 @@ void Game::OthelloInit()
         } else {
             //Could not connect to server!
             std::cout << "Couldn't connect to server!" << std::endl;
+            GameStyle = LocalGame;
+            wPlayer.reset_game = true;
+            bPlayer.reset_game = true;
             //Error here!
             //GameStyle(LocalGame);
             //std::cout << "Change game mode to local!" << std::endl;
@@ -182,6 +185,9 @@ void Game::OthelloInit()
         } else {
             //Could not start server!
             std::cout << "Couldn't start server!" << std::endl;
+            GameStyle = LocalGame;
+            wPlayer.reset_game = true;
+            bPlayer.reset_game = true;
             //Error here!
             //GameStyle(LocalGame);
             //std::cout << "Change game mode to local!" << std::endl;
@@ -384,41 +390,29 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                 else if(bPlayer.PlayerType == AI_Local || wPlayer.PlayerType == AI_Local ||
                     bPlayer.PlayerType == AI_Remote || wPlayer.PlayerType == AI_Remote)
                 {
-                        if (OthelloButton(x, y))
-                        { 
-                            /* if(wPlayer.applyAI(x,y))
-                            {
-                                // AI algorithm for White player
-                                wPlayer.OnTileClicked(x, y);
-                                GameBoard = wPlayer.GameBoard;
-                                HintMask = wPlayer.HintMask;
-
-                                bPlayer.OnTileClicked(x, y);
-                                GameBoard = bPlayer.GameBoard;
-                                HintMask = bPlayer.HintMask;
-                            }
-
-                            // AI algorithm for Black player
-                            if(bPlayer.applyAI(x,y))
-                            {
-                                wPlayer.OnTileClicked(x, y);
-                                GameBoard = wPlayer.GameBoard;
-                                HintMask = wPlayer.HintMask;
-
-                                bPlayer.OnTileClicked(x, y);
-                                GameBoard = bPlayer.GameBoard;
-                                HintMask = bPlayer.HintMask;
-                            }
-                            */
-                            wPlayer.OnTileClicked(x, y);
-                            GameBoard = wPlayer.GameBoard;
-                            HintMask = wPlayer.HintMask;
+                    // This part needs further work, by understanding how board.cpp operates
+                    // AI algorithm for White player
+                   if (OthelloButton(x, y) && wPlayer.applyAI(x,y))
+                    { 
+                        wPlayer.OnTileClicked(x, y);
+                        GameBoard = wPlayer.GameBoard;
+                        HintMask = wPlayer.HintMask;
                             
-                            // AI algorithm for Black player
-                            bPlayer.OnTileClicked(x, y);
-                            GameBoard = bPlayer.GameBoard;
-                            HintMask = bPlayer.HintMask;
-                        }   
+                        bPlayer.OnTileClicked(x, y);
+                        GameBoard = bPlayer.GameBoard;
+                        HintMask = bPlayer.HintMask;
+                    } 
+                    // AI algorithm for Black player
+                    if (bPlayer.applyAI(x,y))
+                    { 
+                        wPlayer.OnTileClicked(x, y);
+                        GameBoard = wPlayer.GameBoard;
+                        HintMask = wPlayer.HintMask;
+                            
+                        bPlayer.OnTileClicked(x, y);
+                        GameBoard = bPlayer.GameBoard;
+                        HintMask = bPlayer.HintMask;
+                    }                                      
                 }
                 else if(bPlayer.PlayerType == Human_Local || wPlayer.PlayerType == Human_Local ||
                     bPlayer.PlayerType == Human_Remote || wPlayer.PlayerType == Human_Remote)
