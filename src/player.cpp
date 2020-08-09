@@ -120,7 +120,7 @@ void Player::initializeGameBoard(int game_style)
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = BLACK;
     current_disc_color = WHITE; 
     playerTurn = WHITE;// Player with Black discs begin game
-    
+
     if (show_hint)
     {
        UpdateHintMask();     

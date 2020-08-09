@@ -3,7 +3,7 @@
  * client.cpp
  * ver 0.20     //1st include to project
  * ver 0.25     //Client will be subclass for class Game
- *ver 1.00     No thread but serving inside class Game
+ * ver 1.00     No thread but serving inside class Game
  */
 
 #include "othello.h"
@@ -19,8 +19,6 @@
  *  shutdown to end read/write.
  *  close to releases data.
  */
-
-//using namespace std::literals::chrono_literals;
 
 Client::Client()
 {
@@ -158,7 +156,6 @@ void Client::Client_Serving()
             //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
             memcpy(&temp, Cl_buffer, cMsg_size);
             Cl_MessagesIn.push_back(temp);
-            //KillSwitch = 0;
         }
 
         if(!Cl_MessagesOut.empty()) {
@@ -166,7 +163,6 @@ void Client::Client_Serving()
             Cl_MessagesOut.erase(Cl_MessagesOut.begin());
             memcpy(Cl_buffer, (const unsigned char*)&temp, cMsg_size);
             send(Cl_ServerSocket, Cl_buffer, strlen(Cl_buffer), 0);
-            //KillSwitch = 0;
         }
     }
 

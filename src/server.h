@@ -1,8 +1,8 @@
 /*
  * Server
  * server.h
- * ver 0.20     //1st include to project
- * ver 0.25     //Server will be subclass for class Game
+ * ver 0.20     1st include to project
+ * ver 0.25     Server will be subclass for class Game
  * ver 1.00     No thread but serving inside class Game
  */
 

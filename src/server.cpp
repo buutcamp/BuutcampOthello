@@ -23,8 +23,6 @@
  *  close to releases data.
  */
 
-//using namespace std::literals::chrono_literals;
-
 Server::Server()
 {
     Srv_MessagesIn = {};
@@ -98,8 +96,6 @@ int Server::Server_Start(const int port)
     }
 
     Srv_isRunning = true;
-    //std::thread Server_srv(Server_Serving, 60000);
-    //Server_srv = std::thread(&Server::Server_Serving, this);
     return 0;
 }
 
@@ -148,6 +144,7 @@ uint16_t Server::GetServerStatus()
 void Server::Server_Serving()
 {
     sMsg temp;
+
     if(Srv_isRunning == true)
     {
         Srv_ValRead = read(Srv_ClientSocket, Srv_buffer, 1024);
@@ -157,7 +154,6 @@ void Server::Server_Serving()
             //std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
             memcpy(&temp, Srv_buffer, sMsg_size);
             Srv_MessagesIn.push_back(temp);
-            //KillSwitch = 0;
         }
 
         if(!Srv_MessagesOut.empty()) {
@@ -165,7 +161,6 @@ void Server::Server_Serving()
             Srv_MessagesOut.erase(Srv_MessagesOut.begin());
             memcpy(Srv_buffer, (const unsigned char*)&temp, sMsg_size);
             send(Srv_ClientSocket, Srv_buffer, strlen(Srv_buffer), 0);
-            //KillSwitch = 0;
         }
     }
 }
