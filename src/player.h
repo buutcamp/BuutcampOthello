@@ -13,6 +13,11 @@
 enum Tiles {EMPTY, WHITE, BLACK, HINT};
 class Player {
     friend class Game;
+  //  friend class ai;
+    //Server server;
+    //Client client;
+    //Game game;
+    
     public:
     Player(/*parameters*/);
     ~Player();
@@ -23,6 +28,7 @@ class Player {
     void FlipDisks(const int x, const int y);
     int updateBlackScore();
     int updateWhiteScore();
+    int getDiscColor();
     void update();
     void OnResetButtonClicked();
     void OnChangeBoardSize();
@@ -32,15 +38,17 @@ class Player {
     void updatePlayerTurn();
     bool reset_Game();
     bool game_Over();
+    bool applyAI(int x_coord,int y_coord);
+    int convertXY_to1D(int x, int y);
     void updateShowHint(const bool hintFlag);
     void updateBoardTiles(const int tiles);
     void updateBoardSize(std::vector<std::vector<int>> boardSize);
     void updateGameHint(std::vector<std::vector<int>> hintButton);
     bool boardSizeChanged();
-    void initializeGameBoard();
+    void initializeGameBoard(int game_type);
   
-    int  PlayerType = -1;
-    int  PlayerColor = Empty;
+    int  PlayerType;
+    int  PlayerColor;
     int GetPlayerNumber() {
             if(PlayerColor == White) {
                 return 1;   //White player is every time Player1
@@ -52,6 +60,7 @@ class Player {
         }    
 
     private:
+    int gameStyle;
     int boardTiles;
     int current_disc_color;
     std::vector<std::vector<int>> GameBoard;
@@ -61,12 +70,17 @@ class Player {
     int scoreWhite;
     int scoreBlack;
     int playerTurn;
+    int discs_counter; // total number of discs placed on the board
 
     bool board_size_changed;
     bool reset_game;
     bool pass_turn;
     bool show_hint;
     bool game_over;
+    //Server server;
+    //Client client;
+    //Game game;
+    //ai aiPlayer;
 
 };
 

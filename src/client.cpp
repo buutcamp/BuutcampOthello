@@ -147,7 +147,6 @@ uint16_t Client::GetClientStatus()
 void Client::Client_Serving()
 {
     cMsg temp;
-
     if(Cl_isConnected == true)
     {
         Cl_ValRead = read(Cl_ServerSocket, Cl_buffer, 1024);
