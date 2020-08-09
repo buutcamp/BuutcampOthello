@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <list>
 #include <algorithm>
-#include "othello.h"
+//#include "othello.h"
 #include "definet.h"
 #include "board.h"
 

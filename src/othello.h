@@ -32,7 +32,7 @@
  * class Game
  */
 
-class Player;
+//class Player;
 
 class Game {
     Server server;
@@ -74,10 +74,10 @@ class Game {
         std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
+        const int GameStyle;
         const int diskRadius;
         const int tileSize;
-        const int GameStyle;
-
+        
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
         std::vector<std::vector<int>> HintMask;

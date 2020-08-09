@@ -3,6 +3,7 @@
  * client.cpp
  * ver 0.20     //1st include to project
  * ver 0.25     //Client will be subclass for class Game
+ *ver 1.00     No thread but serving inside class Game
  */
 
 #include "othello.h"
@@ -19,7 +20,7 @@
  *  close to releases data.
  */
 
-using namespace std::literals::chrono_literals;
+//using namespace std::literals::chrono_literals;
 
 Client::Client()
 {
@@ -96,7 +97,7 @@ int Client::Client_Connect()
         Cl_isConnected = true;
         //std::thread Cl_srv(Client_Serving, 60000);
         std::cout << "Client connected to server." << std::endl;
-        Cl_srv = std::thread(&Client::Client_Serving, this);
+        //Cl_srv = std::thread(&Client::Client_Serving, this);
         return 0;
     }
 }
@@ -145,19 +146,10 @@ uint16_t Client::GetClientStatus()
     return ClStatus;
 }
 
-/*
- * Message thread
- */
-//void Client::Client_Serving(uint16_t KillTime)
 void Client::Client_Serving()
 {
-    uint16_t KillTime = 60000;
     cMsg temp;
-    uint32_t KillSwitch;
-
-    KillSwitch = 0;
-    std::cout << "Client thread ID=" << std::this_thread::get_id() << std::endl;
-    while (Cl_isConnected)
+    if(Cl_isConnected == true)
     {
         Cl_ValRead = read(Cl_ServerSocket, Cl_buffer, 1024);
         if(Cl_ValRead < 0) {
@@ -166,7 +158,7 @@ void Client::Client_Serving()
             //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
             memcpy(&temp, Cl_buffer, cMsg_size);
             Cl_MessagesIn.push_back(temp);
-            KillSwitch = 0;
+            //KillSwitch = 0;
         }
 
         if(!Cl_MessagesOut.empty()) {
@@ -174,14 +166,8 @@ void Client::Client_Serving()
             Cl_MessagesOut.erase(Cl_MessagesOut.begin());
             memcpy(Cl_buffer, (const unsigned char*)&temp, cMsg_size);
             send(Cl_ServerSocket, Cl_buffer, strlen(Cl_buffer), 0);
-            KillSwitch = 0;
+            //KillSwitch = 0;
         }
-        std::this_thread::sleep_for(1s);
-
-        //We don't want this run eternity here, so what kind time is long enough?
-        ++KillSwitch;
-        if(KillSwitch > KillTime)
-            break;
     }
 
 }

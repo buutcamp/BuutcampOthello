@@ -7,6 +7,8 @@
 #include "othello.h"
 
 Player::Player(/*parametres*/): 
+            PlayerType(-1),        //Must change in GUI
+            PlayerColor(EMPTY),    //Must change in GUI
             boardTiles(BOARD_TILES), 
             current_disc_color(WHITE),
             GameBoard{{0}},
@@ -16,14 +18,13 @@ Player::Player(/*parametres*/):
             scoreWhite(2),
             scoreBlack(2),
             //playerTurn(WHITE),
+            discs_counter(4),
             board_size_changed(false),
             //currentTurn(turn),
             reset_game(false),
             pass_turn(false),
             show_hint(true),
-            game_over(false),
-            PlayerColor(EMPTY),    //Must change in GUI
-            PlayerType(-1)        //Must change in GUI
+            game_over(false)
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
@@ -62,6 +63,35 @@ void Player::OnChangeBoardSize()
 void Player::onGameOver()
 {
    game_over = true;
+   discs_counter = 4;
+}
+
+bool Player::applyAI(int x, int y)
+{
+    /* 
+    ai player_algorithm;
+    OthelloBoard board;
+    
+    int x_y_in_1D = convertXY_to1D(x,y);
+    int color = getDiscColor(); 
+    int disc_position = ai.evaluate(board, color); // board.cpp??
+
+    if (disc_position ==  x_y_in_1D)
+        return true;
+*/
+    return false;
+}
+
+int Player::getDiscColor()
+{
+    if(current_disc_color = WHITE)
+       return -1;
+    else
+        return 1;    
+}
+int Player::convertXY_to1D(int x, int y)
+{
+    /* code to covert from (x,y) or (y,x) to a linear value */
 }
 
 int Player::setCurrentDiskColor()
@@ -69,8 +99,10 @@ int Player::setCurrentDiskColor()
     return current_disc_color;
 }
 
-void Player::initializeGameBoard()
+void Player::initializeGameBoard(int game_style)
 {
+    gameStyle = game_style;
+
     //Disk place mask
     for(int y = 0; y < boardTiles; ++y) {
         for(int x = 0; x < boardTiles; ++x) {
@@ -85,8 +117,9 @@ void Player::initializeGameBoard()
     GameBoard[boardTiles / 2][boardTiles / 2] = WHITE;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = BLACK;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = BLACK;
-    current_disc_color = BLACK; 
-    playerTurn = BLACK;// Player with Black discs begin game
+    current_disc_color = WHITE; 
+    playerTurn = WHITE;// Player with Black discs begin game
+    
     if (show_hint)
     {
        UpdateHintMask();     
@@ -115,7 +148,6 @@ bool Player::reset_Game()
         scoreBlack = 2;
         playerTurn = BLACK;
         PlayerColor = EMPTY;
-        PlayerType = -1;
         return true;
     }
     return false;
@@ -133,44 +165,86 @@ void Player::OnTileClicked(int x, int y)
     Game::dbMessage(txt, true);
     #endif
 
-    int discs_counter = 4; // total number of discs placed on the board
+    str txt;
+    uint16_t flags;
+    Server server;
+    Client client;
+    //Game game(White, game_type);
+    //int discs_counter = 4; // total number of discs placed on the board
     //Game mask update
     if(GameBoard[x][y] == EMPTY) {
         //Only Empty is allowed
-            if(TestPosition(x, y) > 0) {
-            if(playerTurn == WHITE)
-            {
-                scoreWhite += (TestPosition(x, y) + 1);
-                scoreBlack -= TestPosition(x, y);
-                playerTurn = BLACK;
-            }
-            else
-            {
-                scoreBlack += (TestPosition(x, y) + 1);
-                scoreWhite -= TestPosition(x, y);
-                playerTurn = WHITE;
-            }
-            GameBoard[x][y] = current_disc_color;
-            
-            FlipDisks(x, y);
-            ++discs_counter;
-            if(discs_counter == (boardTiles * boardTiles)) // all discs placed on gameboard
-            {
-                game_over = true;
-                discs_counter = 4;
-            } 
+            if(TestPosition(x, y) > 0)
+            {  
+                if(playerTurn == WHITE)
+                {
+                    //std::cout << "Turn: white " << setCurrentDiskColor() << "  PlayerType: " << PlayerType << "\n";
+                    scoreWhite += (TestPosition(x, y) + 1);
+                    scoreBlack -= TestPosition(x, y);
+                    playerTurn = BLACK;
+                }
+                else
+                {
+                   // std::cout << "Turn: black " << setCurrentDiskColor() << "  PlayerType: " << PlayerType << "\n";
+                    scoreBlack += (TestPosition(x, y) + 1);
+                    scoreWhite -= TestPosition(x, y);
+                    playerTurn = WHITE;
+                }
+                GameBoard[x][y] = current_disc_color;
+                
+                FlipDisks(x, y);
+                ++discs_counter;
+                if(discs_counter == (boardTiles * boardTiles)) // all discs placed on gameboard
+                {
+                    game_over = true;
+                   // discs_counter = 4;
+                } 
 
-            if(current_disc_color == WHITE)
-                current_disc_color = BLACK;
-            else
-                current_disc_color = WHITE; 
-            if (show_hint)
-               UpdateHintMask();
-        }  
+                if(current_disc_color == WHITE)
+                    current_disc_color = BLACK;
+                else
+                    current_disc_color = WHITE; 
+                
+                //Set flags, who send this move
+                flags = 0;
+                if(PlayerType == Human_Local || PlayerType == Human_Remote)
+                    flags |= HUMAN_MOVE;
+                if(PlayerType == AI_Local || PlayerType == AI_Remote)
+                flags |= AI_MOVE;
+                //Make message from click position
+                txt = std::to_string(x) + "," + std::to_string(y);
+
+                if(gameStyle == ClientGame) {
+                    #if (USE_DEBUG == 1)
+                    std::cout << "Clients move:" << txt << std::endl;
+                    #endif
+                    client.Client_send(txt, flags);
+                }
+                if(gameStyle == ServerGame) {
+                    #if (USE_DEBUG == 1)
+                    std::cout << "Servers move:" << txt << std::endl;
+                    #endif
+                    server.Server_send(txt, flags);
+                }
+
+                if(gameStyle == LocalGame) {
+                    //Local game
+                    #if (USE_DEBUG == 1)
+                    std::cout << "Local move:" << txt << std::endl;
+                    #endif
+                } 
+                /*
+                    * Test if now turn for AI or remote
+                    * if so, LocalLock = true;
+                    * else LocalLock = false;
+                    */
+                if (show_hint)
+                    UpdateHintMask();
+            }  
         else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
         {
             game_over = true;
-            discs_counter = 4;
+            //discs_counter = 4;
         }     
     }
    

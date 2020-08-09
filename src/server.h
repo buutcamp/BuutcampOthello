@@ -3,6 +3,7 @@
  * server.h
  * ver 0.20     //1st include to project
  * ver 0.25     //Server will be subclass for class Game
+ * ver 1.00     No thread but serving inside class Game
  */
 
 /* Sources
@@ -23,7 +24,7 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #include <netinet/in.h>
 #include <string.h>
 #include <vector>
-#include <thread>       //https://en.cppreference.com/w/cpp/thread
+//#include <thread>       //https://en.cppreference.com/w/cpp/thread
 #include "othello.h"
 #include "definet.h"
 
@@ -69,7 +70,7 @@ class Server {
         uint16_t SrvStatus;
         bool Srv_isRunning = false;
         char Srv_buffer[1024];
-        std::thread Server_srv;
+        //std::thread Server_srv;
 };
 
 #endif     //end _SERVER_H_

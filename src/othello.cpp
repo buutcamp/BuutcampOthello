@@ -20,6 +20,7 @@ Game::Game(int diskColor, int game_style) :
             tileSize(64),
             boardTiles(BOARD_TILES),
             GameBoard{{0}},
+            HintMask{{0}},
             tileSpacing(2),
             boardSize(boardTiles * tileSize),
             buttonColor(ImColor(0.10f, 0.5f, 0.20f)),
@@ -29,7 +30,6 @@ Game::Game(int diskColor, int game_style) :
             diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
             diskColorBlack(ImColor(0.0f, 0.0f, 0.0f)),
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
-            HintMask{{0}},
             //scoreWhite(2),
             //scoreBlack(2),
             //playerTurn(Black),
@@ -116,8 +116,8 @@ void Game::OthelloInit()
      Each turn, the player places one piece on the board with their colour facing up.
     */
     
-    bPlayer.initializeGameBoard();
-    wPlayer.initializeGameBoard();
+    bPlayer.initializeGameBoard(GameStyle);
+    wPlayer.initializeGameBoard(GameStyle);
 
     /*
     bPlayer.setCurrentDiskColor(CurrentDiskColor);
@@ -130,10 +130,11 @@ void Game::OthelloInit()
     }*/
     if (showHint)
     {
-       bPlayer.UpdateHintMask();   
-       HintMask = bPlayer.HintMask;
-       wPlayer.UpdateHintMask();   
-       HintMask= wPlayer.HintMask;
+        //bPlayer.UpdateHintMask();   
+        HintMask = bPlayer.HintMask;
+  
+       // wPlayer.UpdateHintMask();   
+        HintMask= wPlayer.HintMask;
     }               
                    
     // adjusts the spacing between buttons
@@ -156,11 +157,15 @@ void Game::OthelloInit()
         if(client.Client_Connect() == 0) {
             //Client connected
             #if (USE_DEBUG == 1)
-            std::cout << "Client found server." << std::endl;
+              txt = "Client found server.";
+              dbMessage(txt, true);
             #endif
         } else {
             //Could not connect to server!
             std::cout << "Couldn't connect to server!" << std::endl;
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
         }
     }
 
@@ -171,11 +176,15 @@ void Game::OthelloInit()
         if(server.Server_Start(PORT) == 0) {
             //Server started and listening
             #if (USE_DEBUG == 1)
-            std::cout << "Server is listening port:" << PORT << std::endl;
+              txt = "Server is listening port:";
+              dbMessage(txt, true);
             #endif
         } else {
             //Could not start server!
             std::cout << "Couldn't start server!" << std::endl;
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
         }
     }
 }
@@ -184,6 +193,18 @@ void Game::OthelloInit()
 void Game::OthelloFrame(float deltaTime)
 {
     //std::cout << "Delta frame:" << deltaTime << std::endl;
+    if(GameStyle == LocalGame) {
+        //We have local game
+    } else if(GameStyle == ClientGame) {
+        client.Client_Serving();
+        HandleRemoteMessages();
+    } else if(GameStyle == ServerGame) {
+        server.Server_Serving();
+        HandleRemoteMessages();
+    } else {
+        //Error in GameStyle!!!
+        std::cout << "Unknown value in GameStyle = " << GameStyle << std::endl;
+    }
 }
 /*
 // called when a tile was clicked
@@ -198,7 +219,7 @@ void Game::OthelloFrame(float deltaTime)
 //    str txt;
 //    uint16_t flags;
 //    static int discs_counter = 4; // total number of discs placed on the board
-//
+//    
 //    /*
 //     * 1st test if valid to make move
 //     * if (LocalLock == true) {
@@ -331,7 +352,7 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius * 0.75, diskColorWhite, 30);
         }
-            else if (bPlayer.setCurrentDiskColor() == Black)
+            else //if (bPlayer.setCurrentDiskColor() == Black)
         {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
         }
@@ -340,27 +361,83 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         const ImVec2 boardStartPosition = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(0,-1));
         // draw the buttons
+
         for (int y = 0; y < boardTiles; ++y)
         {
             for (int x = 0; x < boardTiles; ++x)
             {
                 ImGui::SameLine(0, (float)tileSpacing);
-                if (OthelloButton(x, y))
+                
+                if(wPlayer.PlayerType == -1 || bPlayer.PlayerType == -1) // intializing
                 {
-                    bPlayer.OnTileClicked(x, y);
-                    GameBoard = bPlayer.GameBoard;
-                    HintMask = bPlayer.HintMask;
-
-                    wPlayer.OnTileClicked(x, y);
-                    GameBoard = wPlayer.GameBoard;
-                    HintMask = wPlayer.HintMask;
-                }
+                    if (OthelloButton(x, y))
+                    {
+                        std::cout << "Select Player types" << "\n";
                     
+                        GameBoard = wPlayer.GameBoard;
+                        HintMask = wPlayer.HintMask;
+
+                        GameBoard = bPlayer.GameBoard;
+                        HintMask = bPlayer.HintMask;                        
+                    }
+                }
+                else if(bPlayer.PlayerType == AI_Local || wPlayer.PlayerType == AI_Local ||
+                    bPlayer.PlayerType == AI_Remote || wPlayer.PlayerType == AI_Remote)
+                {
+                        if (OthelloButton(x, y))
+                        { 
+                            /* if(wPlayer.applyAI(x,y))
+                            {
+                                // AI algorithm for White player
+                                wPlayer.OnTileClicked(x, y);
+                                GameBoard = wPlayer.GameBoard;
+                                HintMask = wPlayer.HintMask;
+
+                                bPlayer.OnTileClicked(x, y);
+                                GameBoard = bPlayer.GameBoard;
+                                HintMask = bPlayer.HintMask;
+                            }
+
+                            // AI algorithm for Black player
+                            if(bPlayer.applyAI(x,y))
+                            {
+                                wPlayer.OnTileClicked(x, y);
+                                GameBoard = wPlayer.GameBoard;
+                                HintMask = wPlayer.HintMask;
+
+                                bPlayer.OnTileClicked(x, y);
+                                GameBoard = bPlayer.GameBoard;
+                                HintMask = bPlayer.HintMask;
+                            }
+                            */
+                            wPlayer.OnTileClicked(x, y);
+                            GameBoard = wPlayer.GameBoard;
+                            HintMask = wPlayer.HintMask;
+                            
+                            // AI algorithm for Black player
+                            bPlayer.OnTileClicked(x, y);
+                            GameBoard = bPlayer.GameBoard;
+                            HintMask = bPlayer.HintMask;
+                        }   
+                }
+                else if(bPlayer.PlayerType == Human_Local || wPlayer.PlayerType == Human_Local ||
+                    bPlayer.PlayerType == Human_Remote || wPlayer.PlayerType == Human_Remote)
+                {
+                    if (OthelloButton(x, y)){
+                        wPlayer.OnTileClicked(x, y);
+                        GameBoard = wPlayer.GameBoard;
+                        HintMask = wPlayer.HintMask;
+                        
+                        bPlayer.OnTileClicked(x, y);
+                        GameBoard = bPlayer.GameBoard;
+                        HintMask = bPlayer.HintMask;
+                    }     
+                }
             }
             ImGui::NewLine();
         }
 
-        // draw the pieces over the buttons
+        // draw the discs over the buttons
         #if (USE_DEBUG == 1)
         txt = "Board";
         dbMessage(txt, true);
@@ -430,44 +507,44 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         // set number of tiles/ board size based on the selected item
 
         if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
-        if(current_item != item)
-        {
-            switch(item)
+            if(current_item != item)
             {
-                case 0: 
-                    current_item = 0;
-                    boardTiles = BOARD_TILES;
-                    break;
-                case 1: 
-                    current_item = 1;
-                    boardTiles = BOARD_TILES + 2;
-                    break;
-                case 2:
-                    current_item = 2;
-                    boardTiles = BOARD_TILES + 4;
-                    break;
+                switch(item)
+                {
+                    case 0: 
+                        current_item = 0;
+                        boardTiles = BOARD_TILES;
+                        break;
+                    case 1: 
+                        current_item = 1;
+                        boardTiles = BOARD_TILES + 2;
+                        break;
+                    case 2:
+                        current_item = 2;
+                        boardTiles = BOARD_TILES + 4;
+                        break;
+                }
+                bPlayer.updateBoardTiles(boardTiles);
+                wPlayer.updateBoardTiles(boardTiles);
+
+                //update flag for board size change
+                //boardSizeChanged = true;
+                bPlayer.OnChangeBoardSize();
+                wPlayer.OnChangeBoardSize();
+
+                GameBoard.clear();
+                GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+                bPlayer.updateBoardSize(GameBoard);
+                wPlayer.updateBoardSize(GameBoard);
+
+                if (showHint)
+                {
+                HintMask.clear();
+                HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                bPlayer.updateGameHint(HintMask);
+                wPlayer.updateGameHint(HintMask);
+                }
             }
-            bPlayer.updateBoardTiles(boardTiles);
-            wPlayer.updateBoardTiles(boardTiles);
-
-            //update flag for board size change
-            //boardSizeChanged = true;
-            bPlayer.OnChangeBoardSize();
-            wPlayer.OnChangeBoardSize();
-
-            GameBoard.clear();
-            GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-            bPlayer.updateBoardSize(GameBoard);
-            wPlayer.updateBoardSize(GameBoard);
-
-            if (showHint)
-            {
-               HintMask.clear();
-               HintMask.resize(boardTiles,std::vector<int>(boardTiles));
-               bPlayer.updateGameHint(HintMask);
-               wPlayer.updateGameHint(HintMask);
-            }
-        }
         }
 
         // Draw Reset button
@@ -489,32 +566,78 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
             wPlayer.updateShowHint(showHint);
         }
         
-       //draw combo dropbox to select players option (H-H, H-AI, AI-AI, AI-H)
-        ImGui::NewLine();
-        static int item2 = 0;
-        int current_item2 = item2;
-        const char* items2[] = {"Human", "AI"};
-       
-       // ImGui::Dummy(ImVec2(0.0f, 1.0f));
-        ImGui::PushItemWidth(120);
-        ImGui::SameLine(230, 0);
-        ImGui::Combo("PLAYERS", &item2, items2, IM_ARRAYSIZE(items2)); 
+       //draw combo dropbox to select players option (H_L, H_R, AI_L, AI_R)
+       if((GameStyle == LocalGame) || (GameStyle == ServerGame)) { 
+
+           /* For white player */
+           ImGui::NewLine();
+            int item2 = 0;
+            int current_item2 = item2;
+            const char* items2[] = {"Choose", "Human_Local", "Human_Remote", "AI_Local", "AI_Remote"};
         
-        // set number of tiles/ board size based on the selected item
-        if(current_item2 != item2)
-        {
-            switch(item2)
-             {
-                case 0: 
-                    current_item2 = 0;
-                    // code definition for human players
-                    break;
-                case 1: 
-                    current_item2= 1;
-                     // code definition for Human (local) - AI (remote) players
-                    break;
-             }
-        }
+            ImGui::PushItemWidth(120);
+            ImGui::SameLine(230, 0);
+            ImGui::Combo("WHITE PLAYER TYPE", &item2, items2, IM_ARRAYSIZE(items2)); 
+            
+            if(current_item2 != item2)
+            {
+                switch(item2)
+                {
+                    case 0:
+                            break;
+                        case 1: 
+                            current_item2 = 1;
+                            wPlayer.PlayerType = Human_Local;
+                            break;
+                        case 2: 
+                            current_item2 = 2;
+                            wPlayer.PlayerType = Human_Remote;
+                            break;
+                        case 3: 
+                            current_item2 = 3;
+                            wPlayer.PlayerType = AI_Local;
+                            break;
+                        case 4: 
+                            current_item2 = 4;
+                            wPlayer.PlayerType = AI_Remote;
+                            break;       
+                }            
+            }
+
+            /* For Black player */
+            int item3 = 0;
+            int current_item3 = item3;
+            const char* items3[] = {"Choose", "Human_Local", "Human_Remote", "AI_Local", "AI_Remote"};
+    
+            ImGui::PushItemWidth(120);
+            ImGui::SameLine(480, 0);
+            ImGui::Combo("BLACK PLAYER TYPE", &item3, items3, IM_ARRAYSIZE(items3)); 
+            
+            if(current_item3 != item3)
+            {
+                switch(item3)
+                    {
+                        case 0:
+                            break;
+                        case 1: 
+                            current_item3 = 1;
+                            bPlayer.PlayerType = Human_Local;
+                            break;
+                        case 2: 
+                            current_item3 = 2;
+                            bPlayer.PlayerType = Human_Remote;
+                            break;
+                        case 3: 
+                            current_item3 = 3;
+                            bPlayer.PlayerType = AI_Local;
+                            break;
+                        case 4: 
+                            current_item3 = 4;
+                            bPlayer.PlayerType = AI_Remote;
+                            break;
+                    }    
+            }
+       }
     }
     ImGui::End();
 }
@@ -1101,7 +1224,6 @@ int Game::ParseMoveString(const str text, int& x, int& y)
 
     return 0;
 }
-*/
 
 
 #if (USE_DEBUG == 1)
