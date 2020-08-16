@@ -17,16 +17,18 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #define _CLIENT_H_
 
 #include <iostream>
+#include <unistd.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <netinet/in.h>
 #include <string.h>
 #include <vector>
 //#include <thread>       //https://en.cppreference.com/w/cpp/thread
 #include "othello.h"
 #include "definet.h"
-
 
 using str = std::string;
 using str_vector = std::vector<str>;

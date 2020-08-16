@@ -7,7 +7,7 @@
  */
 
 #include "othello.h"
-//#include "client.h"
+#include "client.h"
 
 /*
  * Client Socket
@@ -30,7 +30,7 @@ Client::Client()
     Cl_ServerSocket = 0;
     Cl_ServerPort = PORT;
 
-    memset(Cl_buffer, 0, sizeof(Cl_buffer));
+    //memset(Cl_buffer, 0, sizeof(Cl_buffer));
     //Test start
     //cMsg temp;
     //temp.id = 1354;

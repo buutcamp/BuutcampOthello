@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    Game game(White, game_type);
+    Game game(BLACK, game_type);
 
     game.InitSdl();
     game.InitImgui();

@@ -7,9 +7,10 @@
 #ifndef _DEFINET_H_
 #define _DEFINET_H_
 
-enum pcs {Empty, White, Black, Hint};
+//enum pcs {Empty, White, Black, Hint};
 enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
 enum game_style {LocalGame, ClientGame, ServerGame};
+enum Tiles {EMPTY, WHITE, BLACK, HINT};
 
 /* Sets constants */
 #define WIDTH                   1000     // Window width

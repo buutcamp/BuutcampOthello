@@ -4,11 +4,19 @@
  */
 
 #include "player.h"
-#include "othello.h"
+//#include "othello.h"
 
-Player::Player(/*parametres*/): 
+#if (USE_DEBUG == 1)
+extern std::string txt;
+#endif
+
+OthelloBoard board;
+
+Player::Player(/*parametres*/):
+            PlayerType(-1),         //Must change in GUI
+            PlayerColor(EMPTY),     //Must change in GUI
             boardTiles(BOARD_TILES), 
-            current_disc_color(WHITE),
+            current_disc_color(BLACK),
             GameBoard{{0}},
             HintMask{{0}},
             hintCount(0),
@@ -21,9 +29,7 @@ Player::Player(/*parametres*/):
             reset_game(false),
             pass_turn(false),
             show_hint(true),
-            game_over(false),
-            PlayerColor(EMPTY),    //Must change in GUI
-            PlayerType(-1)        //Must change in GUI
+            game_over(false)
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
@@ -33,22 +39,19 @@ Player::~Player(){}
 
 void Player::updatePlayerTurn()
 {
-    if(pass_turn == true)
-    {   if(current_disc_color== WHITE)
-        {
+    if(pass_turn == true) {
+        if(current_disc_color == WHITE) {
             playerTurn = BLACK;
             current_disc_color = BLACK;
-        }
-        else
-        {
+        } else {
             playerTurn = WHITE;
             current_disc_color = WHITE;
         }
-        
         pass_turn = false;
     }
-    
+
 }
+
 void Player::OnResetButtonClicked()
 {
     reset_game = true;
@@ -62,6 +65,36 @@ void Player::OnChangeBoardSize()
 void Player::onGameOver()
 {
    game_over = true;
+   discs_counter = 4;
+}
+
+bool Player::applyAI(int x, int y)
+{
+    ai player_algorithm;
+    //OthelloBoard board;
+
+    int x_y_in_1D = convertXY_to1D(x,y);
+    //std::cout <<"x y linear" << x_y_in_1D << "\n";
+    int color = getDiscColor(); 
+    int disc_position = player_algorithm.evaluate(board, color); // board.cpp??
+
+    if (disc_position ==  x_y_in_1D)
+        return true;
+
+    return false;
+}
+
+int Player::getDiscColor()
+{
+    if(current_disc_color == WHITE)
+       return -1;
+    else
+        return 1;    
+}
+
+int Player::convertXY_to1D(int x, int y)
+{
+    return 8 * y + x;
 }
 
 int Player::setCurrentDiskColor()
@@ -69,8 +102,10 @@ int Player::setCurrentDiskColor()
     return current_disc_color;
 }
 
-void Player::initializeGameBoard()
+void Player::initializeGameBoard(int game_style)
 {
+    gameStyle = game_style;
+
     //Disk place mask
     for(int y = 0; y < boardTiles; ++y) {
         for(int x = 0; x < boardTiles; ++x) {
@@ -85,11 +120,11 @@ void Player::initializeGameBoard()
     GameBoard[boardTiles / 2][boardTiles / 2] = WHITE;
     GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = BLACK;
     GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = BLACK;
-    current_disc_color = BLACK; 
+    current_disc_color = BLACK;
     playerTurn = BLACK;// Player with Black discs begin game
     if (show_hint)
     {
-       UpdateHintMask();     
+       UpdateHintMask();
     }
 }
 
@@ -102,6 +137,7 @@ void Player::updateBoardSize(std::vector<std::vector<int>> boardSize)
 {
     GameBoard = boardSize;
 }
+
 void Player::updateGameHint(std::vector<std::vector<int>> hintButton)
 {
     HintMask = hintButton;
@@ -130,10 +166,12 @@ void Player::OnTileClicked(int x, int y)
 {
     #if (USE_DEBUG == 1)
     txt = "Button X:" + std::to_string(x) + " Y:" + std::to_string(y);
-    Game::dbMessage(txt, true);
+    dbMessage(txt, true);
     #endif
 
-    int discs_counter = 4; // total number of discs placed on the board
+    str txt;
+    uint16_t flags;
+    //int discs_counter = 4; // total number of discs placed on the board
     //Game mask update
     if(GameBoard[x][y] == EMPTY) {
         //Only Empty is allowed
@@ -157,23 +195,55 @@ void Player::OnTileClicked(int x, int y)
             if(discs_counter == (boardTiles * boardTiles)) // all discs placed on gameboard
             {
                 game_over = true;
-                discs_counter = 4;
+                //discs_counter = 4;
             } 
 
             if(current_disc_color == WHITE)
                 current_disc_color = BLACK;
             else
                 current_disc_color = WHITE; 
+
+            //Set flags, who send this move
+            flags = 0;
+            if(PlayerType == Human_Local || PlayerType == Human_Remote)
+                flags |= HUMAN_MOVE;
+            if(PlayerType == AI_Local || PlayerType == AI_Remote)
+                flags |= AI_MOVE;
+            //Make message from click position
+            txt = std::to_string(x) + "," + std::to_string(y);
+
+            if(gameStyle == ClientGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Clients move:" << txt << std::endl;
+                #endif
+                client->Client_send(txt, flags);
+            }
+            if(gameStyle == ServerGame) {
+                #if (USE_DEBUG == 1)
+                std::cout << "Servers move:" << txt << std::endl;
+                #endif
+                server->Server_send(txt, flags);
+            }
+
+            if(gameStyle == LocalGame) {
+                //Local game
+                #if (USE_DEBUG == 1)
+                std::cout << "Local move:" << txt << std::endl;
+                #endif
+            } 
+            /*
+             * Test if now turn for AI or remote
+             * if so, LocalLock = true;
+             * else LocalLock = false;
+             */
             if (show_hint)
-               UpdateHintMask();
-        }  
-        else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
+                UpdateHintMask();
+        }  else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
         {
             game_over = true;
-            discs_counter = 4;
+            //discs_counter = 4;
         }     
     }
-   
 }
 
 int Player::TestDirection(const int x, const int y, const int dir_x, const int dir_y)
@@ -210,7 +280,7 @@ int Player::TestDirection(const int x, const int y, const int dir_x, const int d
     }
     #if (USE_DEBUG == 1)
     txt = " Delta sigma = " + std::to_string(reply);
-    Game::dbMessage(txt, true);
+    dbMessage(txt, true);
     #endif
 
     //Do we have valid endpoint?

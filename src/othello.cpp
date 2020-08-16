@@ -10,6 +10,11 @@ std::string txt;
 #endif
 
 std::string ver_txt = "ver 1.0";
+Client client;
+Server server;
+Player bPlayer;
+Player wPlayer;
+Player ActivePlayer;
 
 /*
  * class Game
@@ -20,8 +25,10 @@ Game::Game(int diskColor, int game_style) :
             tileSize(64),
             boardTiles(BOARD_TILES),
             GameBoard{{0}},
+            HintMask{{0}},
             tileSpacing(2),
             boardSize(boardTiles * tileSize),
+            SizeMod(1.00),
             buttonColor(ImColor(0.10f, 0.5f, 0.20f)),
             buttonHoverColor(ImColor(0.10f, 0.3f, 0.251)),
             buttonActiveColor(ImColor( 0.0f, 0.7f, 0.0f)),
@@ -29,29 +36,19 @@ Game::Game(int diskColor, int game_style) :
             diskColorWhite(ImColor(1.0f, 1.0f, 1.0f)),
             diskColorBlack(ImColor(0.0f, 0.0f, 0.0f)),
             diskColorHint(ImColor(0.80f, 0.50f, 0.0f)),
-            HintMask{{0}},
-            //scoreWhite(2),
-            //scoreBlack(2),
-            //playerTurn(Black),
-            //passed_gameTurn_counter(0),
-            // hintCount(0),
             CurrentDiskColor(diskColor),
-            //reset_game(false)
-            //boardSizeChanged(false),
             showHint(true)
-            //game_over(false)
-            // pass_turn(false)
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
-                if(game_style == ClientGame)
-                    client;
-                if(game_style == ServerGame)
-                    server;
-                wPlayer;
-                bPlayer;
-                ActivePlayer = bPlayer;
-                //AI(oBoard, White);
+                //if(game_style == ClientGame)
+                //    client;
+                //if(game_style == ServerGame)
+                //    server;
+                wPlayer;        //Init white player
+                bPlayer;        //Init black player
+                board;          //Init board
+                //AI(Board, Black);
             }
 
 Game::~Game()
@@ -98,42 +95,32 @@ void Game::OthelloInit()
     //Disk place mask
     for(int y = 0; y < boardTiles; ++y) {
         for(int x = 0; x < boardTiles; ++x) {
-            GameBoard[x][y] = Empty;
+            GameBoard[x][y] = EMPTY;
             if (showHint)
-                HintMask[x][y] = Empty;
-        }//Start placement
-    //This way we can make 8*8, 10*10 and 12*12 board as different levels
-    GameBoard[(boardTiles / 2) - 1][(boardTiles / 2) - 1] = White;
-    GameBoard[boardTiles / 2][boardTiles / 2] = White;
-    GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = Black;
-    GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = Black;
-
-    CurrentDiskColor = White; // Player with White discs begin game
-
+                HintMask[x][y] = EMPTY;
+        }
     }
-    
-    bPlayer.initializeGameBoard();
-    wPlayer.initializeGameBoard();
 
-    /*
-    bPlayer.setCurrentDiskColor(CurrentDiskColor);
-    wPlayer.setCurrentDiskColor(CurrentDiskColor);
+    //Start placement
+    //This way we can make 8*8, 10*10 and 12*12 board as different levels
+    GameBoard[(boardTiles / 2) - 1][(boardTiles / 2) - 1] = WHITE;
+    GameBoard[boardTiles / 2][boardTiles / 2] = WHITE;
+    GameBoard[(boardTiles / 2) - 1][boardTiles / 2] = BLACK;
+    GameBoard[boardTiles / 2][(boardTiles / 2) - 1] = BLACK;
+    CurrentDiskColor = BLACK; // Player with Black discs begin game
+    bPlayer.initializeGameBoard(GameStyle);
+    bPlayer.PlayerType = Human_Local;
+    wPlayer.initializeGameBoard(GameStyle);
+    wPlayer.PlayerType = Human_Local;
 
     if (showHint)
     {
-       bPlayer.UpdateHintMask();   
-       wPlayer.UpdateHintMask();   
-    }*/
-    if (showHint)
-    {
-       bPlayer.UpdateHintMask();   
+       HintMask = wPlayer.GameBoard;
        HintMask = bPlayer.HintMask;
-       wPlayer.UpdateHintMask();   
-       HintMask= wPlayer.HintMask;
     }               
                    
     // adjusts the spacing between buttons
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing, tileSpacing));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(tileSpacing * SizeMod, tileSpacing * SizeMod));
 
     // apply custom style to imgui widgets
     ImGuiStyle& style = ImGui::GetStyle();
@@ -148,40 +135,40 @@ void Game::OthelloInit()
     /*
      * Client initialize and connect to server
      */
-    if(GameStyle == ClientGame) {
-        if(client.Client_Connect() == 0) {
-            //Client connected
-            #if (USE_DEBUG == 1)
-            txt = "Client found server.";
-            dbMessage(txt, true);
-            #endif
-        } else {
-            //Could not connect to server!
-            std::cout << "Couldn't connect to server!" << std::endl;
-            //Error here!
-            //GameStyle(LocalGame);
-            //std::cout << "Change game mode to local!" << std::endl;
-        }
-    }
+    //if(GameStyle == ClientGame) {
+    //    if(client.Client_Connect() == 0) {
+    //        //Client connected
+    //        #if (USE_DEBUG == 1)
+    //        txt = "Client found server.";
+    //        dbMessage(txt, true);
+    //        #endif
+    //    } else {
+    //        //Could not connect to server!
+    //        std::cout << "Couldn't connect to server!" << std::endl;
+    //        //Error here!
+    //        //GameStyle(LocalGame);
+    //        //std::cout << "Change game mode to local!" << std::endl;
+    //    }
+    //}
 
     /*
      * Server initialize and start listening
      */
-    if(GameStyle == ServerGame) {
-        if(server.Server_Start(PORT) == 0) {
-            //Server started and listening
-            #if (USE_DEBUG == 1)
-            txt = "Server is listening port:";
-            dbMessage(txt, true);
-            #endif
-        } else {
-            //Could not start server!
-            std::cout << "Couldn't start server!" << std::endl;
-            //Error here!
-            //GameStyle(LocalGame);
-            //std::cout << "Change game mode to local!" << std::endl;
-        }
-    }
+    //if(GameStyle == ServerGame) {
+    //    if(server.Server_Start(PORT) == 0) {
+    //        //Server started and listening
+    //        #if (USE_DEBUG == 1)
+    //        txt = "Server is listening port:";
+    //        dbMessage(txt, true);
+    //        #endif
+    //    } else {
+    //        //Could not start server!
+    //        std::cout << "Couldn't start server!" << std::endl;
+    //        //Error here!
+    //        //GameStyle(LocalGame);
+    //        //std::cout << "Change game mode to local!" << std::endl;
+    //    }
+    //}
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
@@ -202,107 +189,6 @@ void Game::OthelloFrame(float deltaTime)
     }
 }
 
-/*
-// called when a tile was clicked
-
-//void Game::OnTileClicked(int x, int y)
-//{
-//    #if (USE_DEBUG == 1)
-//    txt = "Button X:" + std::to_string(x) + " Y:" + std::to_string(y);
-//    dbMessage(txt, true);
-//    #endif
-//
-//    str txt;
-//    uint16_t flags;
-//    static int discs_counter = 4; // total number of discs placed on the board
-//
-//    /*
-//     * 1st test if valid to make move
-//     * if (LocalLock == true) {
-//     *     if we are here from local player => exit
-//     * }
-//     * AI and remote games must lock local player out
-//     * until they have moves made
-//     */
-//
-//    //Game mask update
-//    if(GameBoard[x][y] == Empty) {
-//        //Only Empty is allowed
-//        if(TestPosition(x, y) > 0) {
-//            if(ActivePlayer.PlayerColor == White)
-//            {
-//                scoreWhite += (TestPosition(x, y) + 1);
-//                scoreBlack -= TestPosition(x, y);
-//                playerTurn = Black;
-//            }
-//            else
-//            {
-//                scoreBlack += (TestPosition(x, y) + 1);
-//                scoreWhite -= TestPosition(x, y);
-//                playerTurn = White;
-//            }
-//
-//            //Set flags, who send this move
-//            flags = 0;
-//            if(ActivePlayer.PlayerType == Human_Local || ActivePlayer.PlayerType == Human_Remote)
-//                flags |= HUMAN_MOVE;
-//            if(ActivePlayer.PlayerType == AI_Local || ActivePlayer.PlayerType == AI_Remote)
-//                flags |= AI_MOVE;
-//            //Make message from click position
-//            txt = std::to_string(x) + "," + std::to_string(y);
-//
-//            if(GameStyle == ClientGame) {
-//                #if (USE_DEBUG == 1)
-//                std::cout << "Clients move:" << txt << std::endl;
-//                #endif
-//                client.Client_send(txt, flags);
-//            }
-//            if(GameStyle == ServerGame) {
-//                #if (USE_DEBUG == 1)
-//                std::cout << "Servers move:" << txt << std::endl;
-//                #endif
-//                server.Server_send(txt, flags);
-//            }
-//
-//            if(GameStyle == LocalGame) {
-//                //Local game
-//                #if (USE_DEBUG == 1)
-//                std::cout << "Local move:" << txt << std::endl;
-//                #endif
-//            }
-//            /*
-//             * Test if now turn for AI or remote
-//             * if so, LocalLock = true;
-//             * else LocalLock = false;
-//             */
-//
-//            GameBoard[x][y] = CurrentDiskColor;
-//            FlipDisks(x, y);
-//            ++discs_counter;
-//            if(discs_counter == (boardTiles * boardTiles)) // all discs placed on gameboard
-//            {
-//                game_over = true;
-//                discs_counter = 4;
-//            }
-//
-//            if(ActivePlayer.GetPlayerNumber() == 1) {
-//                CurrentDiskColor = White;
-//                ActivePlayer = Player2;
-//            } else {
-//                CurrentDiskColor = Black;
-//                ActivePlayer = Player1;
-//            }
-//            if (showHint)
-//                UpdateHintMask();
-//        }
-//        else if(discs_counter == (boardTiles * boardTiles -1) && pass_turn == true) // all except one disc placed and player turn switched
-//        {
-//           game_over = true;
-//           discs_counter = 4;
-//        }
-//    }
-//}
-
 bool Game::OthelloButton(int x, int y)
 {
     // label for the button
@@ -311,7 +197,7 @@ bool Game::OthelloButton(int x, int y)
     // this id must be unique for each button
     std::string id = "othellobutton" + std::to_string(x) + "-" + std::to_string(y);
 
-    if (ImGui::Button((label + "##" + id).c_str(), ImVec2(tileSize, tileSize)))
+    if (ImGui::Button((label + "##" + id).c_str(), ImVec2(tileSize * SizeMod, tileSize * SizeMod)))
         return true;
     return false;
 }
@@ -319,6 +205,7 @@ bool Game::OthelloButton(int x, int y)
 // this function handles all rendering of the GUI
 void Game::OthelloRender(int width, int height/*, Game game*/)
 {
+    str txt;
     ImColor diskColor;
     // the main imgui window uses all the space available
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -336,21 +223,58 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         ImGui::Dummy(ImVec2(300,45));
         ImGui::Spacing();
         ImGui::SameLine(315, 0);
-       // ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.updateBlackScore()/*scoreWhite*/);
-        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.scoreBlack/*scoreWhite*/);
+        //ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.updateBlackScore()/*scoreWhite*/);
+        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", bPlayer.scoreBlack);
         ImGui::SameLine(635, 0);
-        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", wPlayer.scoreWhite/*scoreBlack*/);
+        ImGui::TextColored(ImVec4(1,1,0,1), "%02d", wPlayer.scoreWhite);
 
         //Draw player turn disc
         ImGui::SameLine(420, 0);
         ImGui::TextColored(ImVec4(1,1,0,1), "TURN");
-        if(wPlayer.setCurrentDiskColor() == White)
-        {
+        if(wPlayer.setCurrentDiskColor() == WHITE) {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius * 0.75, diskColorWhite, 30);
-        }
-            else if (bPlayer.setCurrentDiskColor() == Black)
-        {
+            //White local AI?
+            if((GameStyle == LocalGame) && (wPlayer.PlayerType == AI_Local)) {
+                //Do AI move
+                board.positions = {};
+                int x, y;
+                for(y = 0; y < 8; ++y) {
+                    for(x = 0; x < 8; ++x) {
+                        if(wPlayer.GameBoard[x][y] == BLACK) {
+                            board.positions.push_back(1);
+                        } else if(wPlayer.GameBoard[x][y] == WHITE) {
+                            board.positions.push_back(-1);
+                        } else {
+                            board.positions.push_back(0);
+                        }
+                    }
+                }
+                //White is -1
+                int valu = AI.evaluate(board, -1);
+                std::cout << "Ret white val: " << valu << " X:" << valu % 8 << " Y:" << valu / 8 << std::endl;
+            }
+        } else if (bPlayer.setCurrentDiskColor() == BLACK) {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
+            //Black local AI?
+            if((GameStyle == LocalGame) && (bPlayer.PlayerType == AI_Local)) {
+                //Do AI move
+                board.positions = {};
+                int x, y;
+                for(y = 0; y < 8; ++y) {
+                    for(x = 0; x < 8; ++x) {
+                        if(bPlayer.GameBoard[x][y] == BLACK) {
+                            board.positions.push_back(1);
+                        } else if(bPlayer.GameBoard[x][y] == WHITE) {
+                            board.positions.push_back(-1);
+                        } else {
+                            board.positions.push_back(0);
+                        }
+                    }
+                }
+                //Black is +1
+                int valu = AI.evaluate(board, 1);
+                std::cout << "Ret black val: " << valu << " X:" << valu % 8 << " Y:" << valu / 8 << std::endl;
+            }
         }
 
         ImGui::NewLine();
@@ -361,7 +285,7 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         {
             for (int x = 0; x < boardTiles; ++x)
             {
-                ImGui::SameLine(0, (float)tileSpacing);
+                ImGui::SameLine(0, (float)tileSpacing * SizeMod);
                 if (OthelloButton(x, y))
                 {
                     bPlayer.OnTileClicked(x, y);
@@ -386,20 +310,21 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         {
             for (int x = 0; x < boardTiles; ++x)
             {
-                const ImVec2 diskOffset = ImVec2(((tileSize+tileSpacing) * x) + (tileSize * 0.5f) + 2.0f, ((tileSize+tileSpacing) * y) + (tileSize * 0.5f));
-                const ImVec2 diskPos = ImVec2(boardStartPosition.x + diskOffset.x, boardStartPosition.y + diskOffset.y);
+                const ImVec2 diskOffset = ImVec2((((tileSize * SizeMod) + (tileSpacing * SizeMod)) * x) + (tileSize * 0.5f * SizeMod) + (2.0f * SizeMod),
+                    (((tileSize * SizeMod) + (tileSpacing * SizeMod)) * y) + (tileSize * 0.5f * SizeMod));
+                const ImVec2 diskPos = ImVec2( (boardStartPosition.x + diskOffset.x), (boardStartPosition.y + diskOffset.y) );
 
                 //Game mask
-                if(GameBoard[x][y] == White) {
+                if(GameBoard[x][y] == WHITE) {
                     diskColor = diskColorWhite;
-                    drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                    drawList->AddCircleFilled(diskPos, diskRadius * SizeMod, diskColor, 30);
                     #if (USE_DEBUG == 1)
                     txt = "W";
                     dbMessage(txt, false);
                     #endif
-                } else if(GameBoard[x][y] == Black) {
+                } else if(GameBoard[x][y] == BLACK) {
                     diskColor = diskColorBlack;
-                    drawList->AddCircleFilled(diskPos, diskRadius, diskColor, 30);
+                    drawList->AddCircleFilled(diskPos, diskRadius * SizeMod, diskColor, 30);
                     #if (USE_DEBUG == 1)
                     txt = "B";
                     dbMessage(txt, false);
@@ -411,7 +336,7 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                     dbMessage(txt, false);
                     #endif
                     if (showHint){
-                        if(HintMask[x][y] == Hint) {
+                        if(HintMask[x][y] == HINT) {
                             //Place hint here
                             diskColor = diskColorHint;
                             drawList->AddCircleFilled(diskPos, (diskRadius / 4), diskColor, 15);
@@ -435,56 +360,59 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         }        
       
         //draw combo dropbox to select game board size
-        static int item = 0;
-        int current_item = item;
+        static int DropBoxBoardSizeIndex = 0;
+        int current_item = DropBoxBoardSizeIndex;
         const char* items[] = {"8x8", "10x10", "12x12"};
 
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
         ImGui::PushItemWidth(100);
         ImGui::SameLine(230, 0);
-        ImGui::Combo("BOARD SIZE", &item, items, IM_ARRAYSIZE(items));
+        ImGui::Combo("BOARD SIZE", &DropBoxBoardSizeIndex, items, IM_ARRAYSIZE(items));
 
         // set number of tiles/ board size based on the selected item
 
         if((GameStyle == LocalGame) || (GameStyle == ServerGame)) {
-        if(current_item != item)
-        {
-            switch(item)
+            if(current_item != DropBoxBoardSizeIndex)
             {
-                case 0: 
-                    current_item = 0;
-                    boardTiles = BOARD_TILES;
-                    break;
-                case 1: 
-                    current_item = 1;
-                    boardTiles = BOARD_TILES + 2;
-                    break;
-                case 2:
-                    current_item = 2;
-                    boardTiles = BOARD_TILES + 4;
-                    break;
+                switch(DropBoxBoardSizeIndex)
+                {
+                    case 0: 
+                        current_item = 0;
+                        boardTiles = BOARD_TILES;
+                        SizeMod = 1.00;
+                        break;
+                    case 1: 
+                        current_item = 1;
+                        boardTiles = BOARD_TILES + 2;
+                        SizeMod = 0.80;
+                        break;
+                    case 2:
+                        current_item = 2;
+                        boardTiles = BOARD_TILES + 4;
+                        SizeMod = 0.66;
+                        break;
+                }
+                bPlayer.updateBoardTiles(boardTiles);
+                wPlayer.updateBoardTiles(boardTiles);
+
+                //update flag for board size change
+                //boardSizeChanged = true;
+                bPlayer.OnChangeBoardSize();
+                wPlayer.OnChangeBoardSize();
+
+                GameBoard.clear();
+                GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
+                bPlayer.updateBoardSize(GameBoard);
+                wPlayer.updateBoardSize(GameBoard);
+
+                if (showHint)
+                {
+                    HintMask.clear();
+                    HintMask.resize(boardTiles,std::vector<int>(boardTiles));
+                    bPlayer.updateGameHint(HintMask);
+                    wPlayer.updateGameHint(HintMask);
+                }
             }
-            bPlayer.updateBoardTiles(boardTiles);
-            wPlayer.updateBoardTiles(boardTiles);
-
-            //update flag for board size change
-            //boardSizeChanged = true;
-            bPlayer.OnChangeBoardSize();
-            wPlayer.OnChangeBoardSize();
-
-            GameBoard.clear();
-            GameBoard.resize(boardTiles,std::vector<int>(boardTiles));
-            bPlayer.updateBoardSize(GameBoard);
-            wPlayer.updateBoardSize(GameBoard);
-
-            if (showHint)
-            {
-               HintMask.clear();
-               HintMask.resize(boardTiles,std::vector<int>(boardTiles));
-               bPlayer.updateGameHint(HintMask);
-               wPlayer.updateGameHint(HintMask);
-            }
-        }
         }
 
         // Draw Reset button
@@ -499,38 +427,145 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         bool current_hint = showHint;
         ImGui::SameLine(570, 0);
         ImGui::Checkbox("SHOW NEXT MOVE HINT", &showHint);
-       
+
         if(current_hint != showHint)
         {
             bPlayer.updateShowHint(showHint);
             wPlayer.updateShowHint(showHint);
         }
-        
-       //draw combo dropbox to select players option (H-H, H-AI, AI-AI, AI-H)
+
+        //draw combo dropbox to select players option (H-H, H-AI, AI-AI, AI-H)
         ImGui::NewLine();
-        static int item2 = 0;
-        int current_item2 = item2;
-        const char* items2[] = {"Human", "AI"};
-       
-       // ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        static int DropBoxBlackPlayerIndex = 0;
+        static int DropBoxWhitePlayerIndex = 0;
+        int current_Black_Index = DropBoxBlackPlayerIndex;
+        int current_White_Index = DropBoxWhitePlayerIndex;
+        //const char* items2[] = {"Human", "AI"};
+        const char* items_full[] = {"Human local", "Human remote", "AI local", "AI remote"};
+        const char* items_local[] = {"Human local", "AI local"};
+
         ImGui::PushItemWidth(120);
         ImGui::SameLine(230, 0);
-        ImGui::Combo("PLAYERS", &item2, items2, IM_ARRAYSIZE(items2)); 
-        
-        // set number of tiles/ board size based on the selected item
-        if(current_item2 != item2)
-        {
-            switch(item2)
-             {
-                case 0: 
-                    current_item2 = 0;
-                    // code definition for human players
+        if(GameStyle == LocalGame) {
+            ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_local, IM_ARRAYSIZE(items_local)); 
+        } else {
+            ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_full, IM_ARRAYSIZE(items_full)); 
+        }
+        ImGui::SameLine(450, 0);
+        if(GameStyle == LocalGame) {
+            ImGui::Combo("White", &DropBoxWhitePlayerIndex, items_local, IM_ARRAYSIZE(items_local)); 
+        } else {
+            ImGui::Combo("White", &DropBoxWhitePlayerIndex, items_full, IM_ARRAYSIZE(items_full)); 
+        }
+
+        if(current_Black_Index != DropBoxBlackPlayerIndex) {
+            switch(DropBoxBlackPlayerIndex) {
+                case 0:
+                    current_Black_Index = 0;
+                    //Black Human local
+                    bPlayer.PlayerType = Human_Local;
                     break;
-                case 1: 
-                    current_item2= 1;
-                     // code definition for Human (local) - AI (remote) players
+                case 1:
+                    current_Black_Index = 1;
+                    if(GameStyle == LocalGame) {
+                        //Black AI local
+                        bPlayer.PlayerType = AI_Local;
+                    } else {
+                        //Black Human remote
+                        bPlayer.PlayerType = Human_Remote;
+                    }
                     break;
-             }
+                case 2:
+                    current_Black_Index = 2;
+                    //Black AI local
+                    bPlayer.PlayerType = AI_Local;
+                    break;
+                case 3:
+                    current_Black_Index = 3;
+                    //Black AI remote
+                    bPlayer.PlayerType = AI_Remote;
+                    break;
+            }
+            //txt = "White = ";
+            //if(wPlayer.PlayerType == Human_Local) {
+            //    txt += "local human, ";
+            //} else if(wPlayer.PlayerType == Human_Remote) {
+            //    txt += "remote human, ";
+            //} else if(wPlayer.PlayerType == AI_Local) {
+            //    txt += "local AI, ";
+            //} else if(wPlayer.PlayerType == AI_Remote) {
+            //    txt += "remote AI, ";
+            //} else {
+            //    txt += "???, ";
+            //}
+            //txt += "Black = ";
+            //if(bPlayer.PlayerType == Human_Local) {
+            //    txt += "local human.";
+            //} else if(bPlayer.PlayerType == Human_Remote) {
+            //    txt += "remote human.";
+            //} else if(bPlayer.PlayerType == AI_Local) {
+            //    txt += "local AI.";
+            //} else if(bPlayer.PlayerType == AI_Remote) {
+            //    txt += "remote AI.";
+            //} else {
+            //    txt += "???.";
+            //}
+            //std::cout << txt << std::endl;
+        }
+
+        if(current_White_Index != DropBoxWhitePlayerIndex) {
+            switch(DropBoxWhitePlayerIndex) {
+                case 0:
+                    current_White_Index = 0;
+                    //White Human local
+                    wPlayer.PlayerType = Human_Local;
+                    break;
+                case 1:
+                    current_White_Index = 1;
+                    if(GameStyle == LocalGame) {
+                        //White AI local
+                        wPlayer.PlayerType = AI_Local;
+                    } else {
+                        //White Human remote
+                        wPlayer.PlayerType = Human_Remote;
+                    }
+                    break;
+                case 2:
+                    current_White_Index = 2;
+                    //White AI local
+                    wPlayer.PlayerType = AI_Local;
+                    break;
+                case 3:
+                    current_White_Index = 3;
+                    //White AI remote
+                    wPlayer.PlayerType = AI_Remote;
+                    break;
+            }
+            //txt = "White = ";
+            //if(wPlayer.PlayerType == Human_Local) {
+            //    txt += "local human, ";
+            //} else if(wPlayer.PlayerType == Human_Remote) {
+            //    txt += "remote human, ";
+            //} else if(wPlayer.PlayerType == AI_Local) {
+            //    txt += "local AI, ";
+            //} else if(wPlayer.PlayerType == AI_Remote) {
+            //    txt += "remote AI, ";
+            //} else {
+            //    txt += "???, ";
+            //}
+            //txt += "Black = ";
+            //if(bPlayer.PlayerType == Human_Local) {
+            //    txt += "local human.";
+            //} else if(bPlayer.PlayerType == Human_Remote) {
+            //    txt += "remote human.";
+            //} else if(bPlayer.PlayerType == AI_Local) {
+            //    txt += "local AI.";
+            //} else if(bPlayer.PlayerType == AI_Remote) {
+            //    txt += "remote AI.";
+            //} else {
+            //    txt += "???.";
+            //}
+            //std::cout << txt << std::endl;
         }
     }
     ImGui::End();

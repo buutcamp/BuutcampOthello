@@ -32,15 +32,16 @@
  * class Game
  */
 
-class Player;
+//class Player;
 
 class Game {
-    Server server;
-    Client client;
+    friend class Server;
+    friend class Client;
     //Player wPlayer;
     //Player bPlayer;
     ai AI;
     OthelloBoard board;
+    friend class Player;
 
     public:
         Game(int disk_color, int game_style);
@@ -51,27 +52,15 @@ class Game {
         void InitImgui();
         void OthelloFrame(float deltaTime);
         void OthelloRender(int width, int height /*, Game game*/);
-        //void OnTileClicked(int x, int y);
         void update(/*Game game*/);
         void handleEvents();
         void clean();
-        //void updateScore();
-        //void updatePlayerTurn();
         bool resetGame();
         bool gameOver();
         bool changeBoardsize();
         bool OthelloButton(int x, int y);
         bool gameRunning();
-        Player ActivePlayer;
-        //int  TestDirection(const int x, const int y, const int dir_x, const int dir_y);
-        //int  TestPosition(const int x, const int y);
-        //void FlipDisks(const int x, const int y);
-        //#if (USE_HINT_MASK == 1)
-        //void UpdateHintMask(void);
-        //#endif
         bool LocalLock;
-        std::vector<std::vector<int>> GetGameBoard() {return GameBoard;}
-        std::vector<std::vector<int>> GetHintMask() {return HintMask;}
 
     private:
         const int diskRadius;
@@ -91,26 +80,18 @@ class Game {
         const ImColor diskColorWhite;
         const ImColor diskColorBlack;
         const ImColor diskColorHint;
-        //std::vector<std::vector<int>> HintMask;
-        //int scoreWhite;
-        //int scoreBlack;
-        //int playerTurn;
-        //int passed_gameTurn_counter; 
-        //int hintCount;
         int CurrentDiskColor;
-        //bool reset_game;
-        //bool boardSizeChanged;
         bool isRunning;
         bool showHint;
         bool game_over;
-        //bool pass_turn;
         void HandleRemoteMessages();
         int ParseMoveString(const str text, int& x, int& y);
+        float SizeMod;
 
         SDL_Window* window;
         SDL_GLContext gl_context;
-        Player bPlayer;
-        Player wPlayer;
+        //Player bPlayer;
+        //Player wPlayer;
 };
 
 

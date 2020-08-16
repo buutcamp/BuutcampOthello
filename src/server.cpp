@@ -7,7 +7,7 @@
  */
 
 #include "othello.h"
-//#include "server.h"
+#include "server.h"
 
 //https://en.cppreference.com/w/
 
