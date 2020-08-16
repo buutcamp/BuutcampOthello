@@ -63,10 +63,10 @@ class Game {
         bool LocalLock;
 
     private:
+        int GameStyle;
         const int diskRadius;
         const int tileSize;
-        const int GameStyle;
-
+        
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
         std::vector<std::vector<int>> HintMask;

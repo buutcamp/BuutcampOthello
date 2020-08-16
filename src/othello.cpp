@@ -14,7 +14,6 @@ Client client;
 Server server;
 Player bPlayer;
 Player wPlayer;
-Player ActivePlayer;
 
 /*
  * class Game
