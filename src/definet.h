@@ -11,10 +11,11 @@
 enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
 enum game_style {LocalGame, ClientGame, ServerGame};
 enum Tiles {EMPTY, WHITE, BLACK, HINT};
+enum Tiles_AI {AI_EMPTY = 0, AI_WHITE = -1, AI_BLACK = 1};
 
 /* Sets constants */
 #define WIDTH                   1000     // Window width
-#define HEIGHT                  800     // Window height
+#define HEIGHT                  900     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
 #define USE_DEBUG               0       //1 = In use, 0 = Not used
 

@@ -36,23 +36,24 @@ void OthelloBoard::displayLegalMoves()
     //int moveNum = 1;
     std::list<int> flippedDiscs;
 
-    std::cout << "Legal moves:" << std::endl;
+    std::cout << "Legal moves:" << this->moves.size() << std::endl;
 
     for (auto keyval : this->moves) {
         index2coord(keyval.first, colNum, rowNum);
         //std::cout << "\t" << moveNum++ << "\t" << colCoord[colNum] << rowCoord[rowNum];
-
+        std::cout << keyval.first << " x:" << colNum << " y:" << rowNum << " will flip: ";
         flippedDiscs = keyval.second;
-        std::cout << " will flip: ";
 
-        for (int disc : flippedDiscs) {
-            index2coord(disc, colNum, rowNum);
-            //std::cout << colCoord[colNum] << rowCoord[rowNum] << " ";
+        for (int n : flippedDiscs) {
+            std::cout << n << ' ';
         }
-
+        //for (int disc : flippedDiscs) {
+        //    index2coord(disc, colNum, rowNum);
+        //    //std::cout << colCoord[colNum] << rowCoord[rowNum] << " ";
+        //    std::cout << "x:" << colNum << "y: " << rowNum << " ";
+        //}
         std::cout << std::endl;
     }
-
     std::cout << std::endl;
 }
 
@@ -151,4 +152,78 @@ void OthelloBoard::index2coord(int index, int &colNum, int &rowNum)
 {
     colNum = index % 8;
     rowNum = index / 8;
+}
+
+int OthelloBoard::calcWeight(int posit)
+{
+    std::vector<int> weights = {
+         200, -100, 100,  50,  50, 100, -100,  200,
+        -100, -200, -50, -50, -50, -50, -200, -100,
+         100,  -50, 100,   0,   0, 100,  -50,  100,
+          50,  -50,   0,   0,   0,   0,  -50,   50,
+          50,  -50,   0,   0,   0,   0,  -50,   50,
+         100,  -50, 100,   0,   0, 100,  -50,  100,
+        -100, -200, -50, -50, -50, -50, -200, -100,
+         200, -100, 100,  50,  50, 100, -100,  200,
+    };
+    if (positions[0] != 0) {
+        weights[1]  = 0;
+        weights[2]  = 0;
+        weights[3]  = 0;
+        weights[8]  = 0;
+        weights[9]  = 0;
+        weights[10] = 0;
+        weights[11] = 0;
+        weights[16] = 0;
+        weights[17] = 0;
+        weights[18] = 0;
+        weights[24] = 0;
+        weights[25] = 0;
+    }
+
+    if (positions[7] != 0) {
+        weights[4]  = 0;
+        weights[5]  = 0;
+        weights[6]  = 0;
+        weights[12] = 0;
+        weights[13] = 0;
+        weights[14] = 0;
+        weights[15] = 0;
+        weights[21] = 0;
+        weights[22] = 0;
+        weights[23] = 0;
+        weights[30] = 0;
+        weights[31] = 0;
+    }
+
+    if (positions[56] != 0) {
+        weights[32] = 0;
+        weights[33] = 0;
+        weights[40] = 0;
+        weights[41] = 0;
+        weights[42] = 0;
+        weights[48] = 0;
+        weights[49] = 0;
+        weights[50] = 0;
+        weights[51] = 0;
+        weights[57] = 0;
+        weights[58] = 0;
+        weights[59] = 0;
+    }
+
+    if (positions[63] != 0) {
+        weights[38] = 0;
+        weights[39] = 0;
+        weights[45] = 0;
+        weights[46] = 0;
+        weights[47] = 0;
+        weights[52] = 0;
+        weights[53] = 0;
+        weights[54] = 0;
+        weights[55] = 0;
+        weights[60] = 0;
+        weights[61] = 0;
+        weights[62] = 0;
+    }
+    return weights[posit];
 }

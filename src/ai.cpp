@@ -52,11 +52,11 @@ int ai::utility(OthelloBoard &board, int &color) {
     int util = std::accumulate(board.positions.begin(),
             board.positions.end(), 0);
 
-    if (color == 1) {
+    if (color == AI_BLACK) {
         return util; 
     }
     else {
-        return -1*util;
+        return (AI_WHITE * util);
     }
 }//2
 
@@ -64,11 +64,11 @@ int ai::utility(OthelloBoard &board, int &color) {
 // Relative disc difference between the two players
 int ai::discDifference(OthelloBoard &board, int &color) {
     int blackCount = std::count(board.positions.begin(),
-            board.positions.end(), 1);
+            board.positions.end(), AI_BLACK);
     int whiteCount = std::count(board.positions.begin(),
-            board.positions.end(), -1);
+            board.positions.end(), AI_WHITE);
 
-    if (color == 1) {
+    if (color == AI_BLACK) {
         return 100 * (blackCount - whiteCount) / (blackCount + whiteCount);
     }
     else {
@@ -79,15 +79,60 @@ int ai::discDifference(OthelloBoard &board, int &color) {
 //4
 // Number of possible moves
 int ai::mobility(OthelloBoard &board, int &color) {
-    board.findLegalMoves(1, &pMoves);
+    int x = 0, y = 0;
+    std::list<int> flippedDiscs;
+    //
+    board.findLegalMoves(AI_BLACK, &pMoves);
     int blackMoves = pMoves.size();
+    //Debug start
+    //std::cout << "Black:" << blackMoves << std::endl;
+    //for (auto keyval : pMoves) {
+    //    //index2coord(keyval.first, colNum, rowNum);
+    //    //std::cout << "\t" << moveNum++ << "\t" << colCoord[colNum] << rowCoord[rowNum];
+    //    flippedDiscs = keyval.second;
+    //    std::cout << keyval.first;
+    //    x = keyval.first % 8;
+    //    y = keyval.first / 8;
+    //    std::cout << " x:" << x << " y:" << y << " will flip: ";
+    //    for (int n : flippedDiscs) {
+    //        std::cout << n << ' ';
+    //    }
+    //    //for (int disc : flippedDiscs) {
+    //    //    //index2coord(disc, colNum, rowNum);
+    //    //    //std::cout << colCoord[colNum] << rowCoord[rowNum] << " ";
+    //    //}
+    //    std::cout << std::endl;
+    //}
+    //std::cout << std::endl;
+    //Debug ends
     pMoves.clear();
 
-    board.findLegalMoves(-1, &pMoves);
+    board.findLegalMoves(AI_WHITE, &pMoves);
     int whiteMoves = pMoves.size();
+    //Debug start
+    //std::cout << "White:" << whiteMoves << std::endl;
+    //for (auto keyval : pMoves) {
+    //    //index2coord(keyval.first, colNum, rowNum);
+    //    //std::cout << "\t" << moveNum++ << "\t" << colCoord[colNum] << rowCoord[rowNum];
+    //    flippedDiscs = keyval.second;
+    //    std::cout << keyval.first;
+    //    x = keyval.first % 8;
+    //    y = keyval.first / 8;
+    //    std::cout << " x:" << x << " y:" << y << " will flip: ";
+    //    for (int n : flippedDiscs) {
+    //        std::cout << n << ' ';
+    //    }
+    //    //for (int disc : flippedDiscs) {
+    //    //    //index2coord(disc, colNum, rowNum);
+    //    //    //std::cout << colCoord[colNum] << rowCoord[rowNum] << " ";
+    //    //}
+    //    std::cout << std::endl;
+    //}
+    //std::cout << std::endl;
+    //Debug ends
     pMoves.clear();
 
-    if (color == 1) {
+    if (color == AI_BLACK) {
         return 100 * (blackMoves - whiteMoves) / (blackMoves + whiteMoves + 1);
     }
     else {
@@ -356,11 +401,10 @@ int ai::squareWeights(OthelloBoard &board, int &color) {
         weights[62] = 0;
     }
 
-    if (color == 1) {
+    if (color == AI_BLACK) {
         return std::inner_product(board.positions.begin(),
                 board.positions.end(), weights.begin(), 0);
-    }
-    else {
+    } else {
         return -1*std::inner_product(board.positions.begin(),
                 board.positions.end(), weights.begin(), 0);
     }
@@ -373,19 +417,17 @@ int ai::corners(OthelloBoard &board, int &color) {
     int whiteCorners = 0;
 
     for (int corner : corners) {
-        if (board.positions[corner] == 1) {
+        if (board.positions[corner] == AI_BLACK) {
             blackCorners++;
-        }
-        else if (board.positions[corner] == -1) {
+        } else if (board.positions[corner] == AI_WHITE) {
             whiteCorners++;
         }
     }
 
-    if (color == 1) {
+    if (color == AI_BLACK) {
         return 100 * (blackCorners - whiteCorners)
             / (blackCorners + whiteCorners + 1);
-    }
-    else {
+    } else {
         return 100 * (whiteCorners - blackCorners)
             / (blackCorners + whiteCorners + 1);
     }
