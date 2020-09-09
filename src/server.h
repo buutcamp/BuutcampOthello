@@ -26,7 +26,6 @@ https://www.youtube.com/watch?v=uIanSvWou1M     UDP
 #include <netinet/in.h>
 #include <string.h>
 #include <vector>
-//#include <thread>       //https://en.cppreference.com/w/cpp/thread
 #include "othello.h"
 #include "definet.h"
 
@@ -47,7 +46,6 @@ class Server {
         int  Server_send(const str text, const uint16_t flags);
         bool Server_recv(str& text, uint16_t& flags);
         uint16_t GetServerStatus();
-        //void Server_Serving(uint16_t KillTime);
         void Server_Serving();
         int sMsg_size = sizeof(sMsg);
     private:
@@ -72,7 +70,6 @@ class Server {
         uint16_t SrvStatus;
         bool Srv_isRunning = false;
         char Srv_buffer[1024];
-        //std::thread Server_srv;
 };
 
 #endif     //end _SERVER_H_

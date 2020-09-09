@@ -9,12 +9,15 @@
 std::string txt;
 #endif
 
+#define MAX_CHAT_LINES      16
+
 std::string ver_txt = "ver 1.0";
+#if (USE_NET == 1)
 Client client;
 Server server;
+#endif
 Player bPlayer;
 Player wPlayer;
-Player ActivePlayer;
 
 /*
  * class Game
@@ -41,14 +44,22 @@ Game::Game(int diskColor, int game_style) :
             {
                 GameBoard = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
                 HintMask = std::vector<std::vector<int> >(boardTiles, std::vector<int>(boardTiles));
-                //if(game_style == ClientGame)
-                //    client;
-                //if(game_style == ServerGame)
-                //    server;
+                #if (USE_NET == 1)
+                if(game_style == ClientGame) {
+                    client;
+                }
+                if(game_style == ServerGame) {
+                    server;
+                }
+                #endif
                 wPlayer;        //Init white player
                 bPlayer;        //Init black player
+                #if (USE_AI == 1)
                 board;          //Init board
+                #endif
                 //AI(Board, Black);
+                ChatBuff = {};
+                Game::AddChatText("Othello ver 1.0");
             }
 
 Game::~Game()
@@ -132,43 +143,41 @@ void Game::OthelloInit()
     style.WindowRounding = 0.0f;
     style.WindowPadding = ImVec2(200, 30);// padding within the window
 
+    #if (USE_NET == 1)
     /*
      * Client initialize and connect to server
      */
-    //if(GameStyle == ClientGame) {
-    //    if(client.Client_Connect() == 0) {
-    //        //Client connected
-    //        #if (USE_DEBUG == 1)
-    //        txt = "Client found server.";
-    //        dbMessage(txt, true);
-    //        #endif
-    //    } else {
-    //        //Could not connect to server!
-    //        std::cout << "Couldn't connect to server!" << std::endl;
-    //        //Error here!
-    //        //GameStyle(LocalGame);
-    //        //std::cout << "Change game mode to local!" << std::endl;
-    //    }
-    //}
+    if(GameStyle == ClientGame) {
+        if(client.Client_Connect() == 0) {
+            //Client connected
+            Game::AddChatText("Client found server.");
+        } else {
+            //Could not connect to server!
+            Game::AddChatText("Couldn't connect to server!");
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
+            //What else must change?
+        }
+    }
 
     /*
      * Server initialize and start listening
      */
-    //if(GameStyle == ServerGame) {
-    //    if(server.Server_Start(PORT) == 0) {
-    //        //Server started and listening
-    //        #if (USE_DEBUG == 1)
-    //        txt = "Server is listening port:";
-    //        dbMessage(txt, true);
-    //        #endif
-    //    } else {
-    //        //Could not start server!
-    //        std::cout << "Couldn't start server!" << std::endl;
-    //        //Error here!
-    //        //GameStyle(LocalGame);
-    //        //std::cout << "Change game mode to local!" << std::endl;
-    //    }
-    //}
+    if(GameStyle == ServerGame) {
+        if(server.Server_Start(PORT) == 0) {
+            //Server started and listening
+            Game::AddChatText("Server is listening.");
+        } else {
+            //Could not start server!
+            Game::AddChatText("Couldn't start server!");
+            //Error here!
+            //GameStyle(LocalGame);
+            //std::cout << "Change game mode to local!" << std::endl;
+            //What else must change?
+        }
+    }
+    #endif      //(USE_NET == 1)
 }
 
 // game logic goes here, deltaTime is the time in seconds since last call to this function
@@ -176,13 +185,17 @@ void Game::OthelloFrame(float deltaTime)
 {
     //std::cout << "Delta frame:" << deltaTime << std::endl;
     if(GameStyle == LocalGame) {
-        //We have local game
+        //We have local game. Do we some special checks?
     } else if(GameStyle == ClientGame) {
+        #if (USE_NET == 1)
         client.Client_Serving();
         HandleRemoteMessages();
+        #endif
     } else if(GameStyle == ServerGame) {
+        #if (USE_NET == 1)
         server.Server_Serving();
         HandleRemoteMessages();
+        #endif
     } else {
         //Error in GameStyle!!!
         std::cout << "Unknown value in GameStyle = " << GameStyle << std::endl;
@@ -205,7 +218,7 @@ bool Game::OthelloButton(int x, int y)
 // this function handles all rendering of the GUI
 void Game::OthelloRender(int width, int height/*, Game game*/)
 {
-    str txt;
+    std::string txt;
     ImColor diskColor;
     // the main imgui window uses all the space available
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -235,45 +248,71 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius * 0.75, diskColorWhite, 30);
             //White local AI?
             if((GameStyle == LocalGame) && (wPlayer.PlayerType == AI_Local)) {
-                //Do AI move
+                #if (USE_AI == 1)
+                //Copy board for AI
                 board.positions = {};
                 int x, y;
                 for(y = 0; y < 8; ++y) {
                     for(x = 0; x < 8; ++x) {
                         if(wPlayer.GameBoard[x][y] == BLACK) {
-                            board.positions.push_back(1);
+                            board.positions.push_back(AI_BLACK);
                         } else if(wPlayer.GameBoard[x][y] == WHITE) {
-                            board.positions.push_back(-1);
+                            board.positions.push_back(AI_WHITE);
                         } else {
-                            board.positions.push_back(0);
+                            board.positions.push_back(AI_EMPTY);
                         }
                     }
                 }
-                //White is -1
-                int valu = AI.evaluate(board, -1);
-                std::cout << "Ret white val: " << valu << " X:" << valu % 8 << " Y:" << valu / 8 << std::endl;
+                //Do AI calculations
+                int valu = AI.evaluate(board, AI_WHITE);
+                std::cout << "Ret white val: " << valu << std::endl;
+                board.findLegalMoves(AI_WHITE, &board.moves);
+                board.displayLegalMoves();
+                std::cout << "Moves: " << board.moves.size() << std::endl;
+                for( const auto& n : board.moves ) {
+                    std::cout << "indx:" << n.first << " vals:";
+                    for (int f : n.second) {
+                        std::cout << f << '(' << board.calcWeight(f) << ") ";
+                    }
+                    std::cout << std::endl;
+                }
+                std::cout << std::endl;
+                #endif      //(USE_AI == 1)
             }
         } else if (bPlayer.setCurrentDiskColor() == BLACK) {
             drawList->AddCircleFilled(ImVec2(480, 80), diskRadius *0.75, diskColorBlack, 30);
             //Black local AI?
             if((GameStyle == LocalGame) && (bPlayer.PlayerType == AI_Local)) {
-                //Do AI move
+                #if (USE_AI == 1)
+                //Copy board for AI
                 board.positions = {};
                 int x, y;
                 for(y = 0; y < 8; ++y) {
                     for(x = 0; x < 8; ++x) {
                         if(bPlayer.GameBoard[x][y] == BLACK) {
-                            board.positions.push_back(1);
+                            board.positions.push_back(AI_BLACK);
                         } else if(bPlayer.GameBoard[x][y] == WHITE) {
-                            board.positions.push_back(-1);
+                            board.positions.push_back(AI_WHITE);
                         } else {
-                            board.positions.push_back(0);
+                            board.positions.push_back(AI_EMPTY);
                         }
                     }
                 }
-                //Black is +1
-                int valu = AI.evaluate(board, 1);
-                std::cout << "Ret black val: " << valu << " X:" << valu % 8 << " Y:" << valu / 8 << std::endl;
+                //Do AI calculations
+                int valu = AI.evaluate(board, AI_BLACK);
+                std::cout << "Ret black val: " << valu << std::endl;
+                board.findLegalMoves(AI_BLACK, &board.moves);
+                board.displayLegalMoves();
+                std::cout << "Moves: " << board.moves.size() << std::endl;
+                for( const auto& n : board.moves ) {
+                    std::cout << "indx:" << n.first << " vals: ";
+                    for (int f : n.second) {
+                        std::cout << f << '(' << board.calcWeight(f) << ") ";
+                    }
+                    std::cout << std::endl;
+                }
+                std::cout << std::endl;
+                #endif      //(USE_AI == 1)
             }
         }
 
@@ -380,16 +419,19 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                         current_item = 0;
                         boardTiles = BOARD_TILES;
                         SizeMod = 1.00;
+                        Game::AddChatText("Board is now 8 x 8");
                         break;
                     case 1: 
                         current_item = 1;
                         boardTiles = BOARD_TILES + 2;
                         SizeMod = 0.80;
+                        Game::AddChatText("Board is now 10 x 10");
                         break;
                     case 2:
                         current_item = 2;
                         boardTiles = BOARD_TILES + 4;
                         SizeMod = 0.66;
+                        Game::AddChatText("Board is now 12 x 12");
                         break;
                 }
                 bPlayer.updateBoardTiles(boardTiles);
@@ -416,7 +458,7 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         }
 
         // Draw Reset button
-         ImGui::SameLine(450, 0);
+        ImGui::SameLine(450, 0);
         if(ImGui::Button("RESET"))
         {
             //reset_game = true;
@@ -440,20 +482,29 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
         static int DropBoxWhitePlayerIndex = 0;
         int current_Black_Index = DropBoxBlackPlayerIndex;
         int current_White_Index = DropBoxWhitePlayerIndex;
-        //const char* items2[] = {"Human", "AI"};
+
         const char* items_full[] = {"Human local", "Human remote", "AI local", "AI remote"};
         const char* items_local[] = {"Human local", "AI local"};
+        const char* items_local_h[] = {"Human local"};
 
         ImGui::PushItemWidth(120);
         ImGui::SameLine(230, 0);
         if(GameStyle == LocalGame) {
-            ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_local, IM_ARRAYSIZE(items_local)); 
+            #if (USE_AI == 1)
+            ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_local, IM_ARRAYSIZE(items_local));
+            #else
+            ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_local_h, IM_ARRAYSIZE(items_local_h));
+            #endif
         } else {
             ImGui::Combo("Black", &DropBoxBlackPlayerIndex, items_full, IM_ARRAYSIZE(items_full)); 
         }
         ImGui::SameLine(450, 0);
         if(GameStyle == LocalGame) {
+            #if (USE_AI == 1)
             ImGui::Combo("White", &DropBoxWhitePlayerIndex, items_local, IM_ARRAYSIZE(items_local)); 
+            #else
+            ImGui::Combo("White", &DropBoxWhitePlayerIndex, items_local_h, IM_ARRAYSIZE(items_local_h)); 
+            #endif
         } else {
             ImGui::Combo("White", &DropBoxWhitePlayerIndex, items_full, IM_ARRAYSIZE(items_full)); 
         }
@@ -463,54 +514,34 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                 case 0:
                     current_Black_Index = 0;
                     //Black Human local
+                    Game::AddChatText("Black is local human");
                     bPlayer.PlayerType = Human_Local;
                     break;
                 case 1:
                     current_Black_Index = 1;
                     if(GameStyle == LocalGame) {
                         //Black AI local
+                        Game::AddChatText("Black is local AI");
                         bPlayer.PlayerType = AI_Local;
                     } else {
                         //Black Human remote
+                        Game::AddChatText("Black is remote human");
                         bPlayer.PlayerType = Human_Remote;
                     }
                     break;
                 case 2:
                     current_Black_Index = 2;
                     //Black AI local
+                    Game::AddChatText("Black is local AI");
                     bPlayer.PlayerType = AI_Local;
                     break;
                 case 3:
                     current_Black_Index = 3;
                     //Black AI remote
+                    Game::AddChatText("Black is remote AI");
                     bPlayer.PlayerType = AI_Remote;
                     break;
             }
-            //txt = "White = ";
-            //if(wPlayer.PlayerType == Human_Local) {
-            //    txt += "local human, ";
-            //} else if(wPlayer.PlayerType == Human_Remote) {
-            //    txt += "remote human, ";
-            //} else if(wPlayer.PlayerType == AI_Local) {
-            //    txt += "local AI, ";
-            //} else if(wPlayer.PlayerType == AI_Remote) {
-            //    txt += "remote AI, ";
-            //} else {
-            //    txt += "???, ";
-            //}
-            //txt += "Black = ";
-            //if(bPlayer.PlayerType == Human_Local) {
-            //    txt += "local human.";
-            //} else if(bPlayer.PlayerType == Human_Remote) {
-            //    txt += "remote human.";
-            //} else if(bPlayer.PlayerType == AI_Local) {
-            //    txt += "local AI.";
-            //} else if(bPlayer.PlayerType == AI_Remote) {
-            //    txt += "remote AI.";
-            //} else {
-            //    txt += "???.";
-            //}
-            //std::cout << txt << std::endl;
         }
 
         if(current_White_Index != DropBoxWhitePlayerIndex) {
@@ -518,209 +549,73 @@ void Game::OthelloRender(int width, int height/*, Game game*/)
                 case 0:
                     current_White_Index = 0;
                     //White Human local
+                    Game::AddChatText("White is local human");
                     wPlayer.PlayerType = Human_Local;
                     break;
                 case 1:
                     current_White_Index = 1;
                     if(GameStyle == LocalGame) {
                         //White AI local
+                        Game::AddChatText("White is local AI");
                         wPlayer.PlayerType = AI_Local;
                     } else {
                         //White Human remote
+                        Game::AddChatText("White is remote human");
                         wPlayer.PlayerType = Human_Remote;
                     }
                     break;
                 case 2:
                     current_White_Index = 2;
                     //White AI local
+                    Game::AddChatText("White is local AI");
                     wPlayer.PlayerType = AI_Local;
                     break;
                 case 3:
                     current_White_Index = 3;
                     //White AI remote
+                    Game::AddChatText("White is remote AI");
                     wPlayer.PlayerType = AI_Remote;
                     break;
             }
-            //txt = "White = ";
-            //if(wPlayer.PlayerType == Human_Local) {
-            //    txt += "local human, ";
-            //} else if(wPlayer.PlayerType == Human_Remote) {
-            //    txt += "remote human, ";
-            //} else if(wPlayer.PlayerType == AI_Local) {
-            //    txt += "local AI, ";
-            //} else if(wPlayer.PlayerType == AI_Remote) {
-            //    txt += "remote AI, ";
-            //} else {
-            //    txt += "???, ";
-            //}
-            //txt += "Black = ";
-            //if(bPlayer.PlayerType == Human_Local) {
-            //    txt += "local human.";
-            //} else if(bPlayer.PlayerType == Human_Remote) {
-            //    txt += "remote human.";
-            //} else if(bPlayer.PlayerType == AI_Local) {
-            //    txt += "local AI.";
-            //} else if(bPlayer.PlayerType == AI_Remote) {
-            //    txt += "remote AI.";
-            //} else {
-            //    txt += "???.";
-            //}
-            //std::cout << txt << std::endl;
         }
     }
+    /*
+     * Chat text
+     */
+    static char text[1024 * MAX_CHAT_LINES] = {0};
+    txt = "";
+    //Chat-vector to buffer
+    for(int x = 0; x < ChatBuff.size(); ++x) {
+        txt += ChatBuff.at(x);
+        if(x < ChatBuff.size())
+            txt += "\n";
+    }
+    //This is just output, so it's read-only
+    memcpy(text, txt.c_str(), txt.length());
+    ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text),
+        ImVec2(-1.0f, ImGui::GetTextLineHeight() * 7),
+        ImGuiInputTextFlags_AllowTabInput | ImGuiInputTextFlags_ReadOnly);
+
+    #if (USE_NET == 1)
+    ImGui::NewLine();
+    //Input for chat
+    static char text_out[1000];
+    ImGui::InputTextMultiline("##chat_in", text_out, 1000, ImVec2(-1.0f, ImGui::GetTextLineHeight() * 2), 0);
+    ImGui::NewLine();
+    if(ImGui::Button("SEND"))
+    {
+        //Send chat text out
+        Game::AddChatText(text_out);
+        //Show locally on output
+        client.Client_send(text_out, CHAT_TEXT);
+        //Clear buffer
+        memset(text_out, 0, 1000);
+    }
+    #endif      //(USE_NET == 1)
+
     ImGui::End();
 }
-/*
-int Game::TestDirection(const int x, const int y, const int dir_x, const int dir_y)
-{
-    int reply = 0;
-    bool end_point = false;
-    int pos_x, pos_y;
 
-    //We don't test starting point, but next
-    pos_x = x + dir_x;
-    pos_y = y + dir_y;
-
-    #if (USE_DEBUG == 1)
-    txt = "X:" + std::to_string(x) + " Y:" + std::to_string(y) + " delta X = " + std::to_string(dir_x) + " delta Y = " + std::to_string(dir_y);
-    dbMessage(txt, true);
-    #endif
-    //We must stay inside board
-    while ((pos_x >= 0) && (pos_x < boardTiles) && (pos_y >= 0) && (pos_y < boardTiles))
-    {
-        if(GameBoard[pos_x][pos_y] == Empty) {
-            //No disks to flip in this direction
-            reply = 0;
-            break;
-        } else if(GameBoard[pos_x][pos_y] == CurrentDiskColor) {
-            //Found endpoint in this direction
-            end_point = true;
-            break;
-        } else if(GameBoard[pos_x][pos_y] != CurrentDiskColor) {
-            //Possible filippable disk, if there is endpoint
-            ++reply;
-        }
-        pos_x += dir_x;
-        pos_y += dir_y;
-    }
-    #if (USE_DEBUG == 1)
-    txt = " Delta sigma = " + std::to_string(reply);
-    dbMessage(txt, true);
-    #endif
-
-    //Do we have valid endpoint?
-    if(end_point == true)
-        return reply;
-    else
-        return 0;
-}
-
-int Game::TestPosition(const int x, const int y)
-{
-    int reply;
-
-    reply = TestDirection(x, y, -1, 0);     //Test to left
-    reply += TestDirection(x, y, 1, 0);     //Test to right
-    reply += TestDirection(x, y, 0, -1);    //Test to up
-    reply += TestDirection(x, y, 0, 1);     //Test to down
-    reply += TestDirection(x, y, -1, -1);   //Diagonal test left up
-    reply += TestDirection(x, y, 1, 1);     //Diagonal test right down
-    reply += TestDirection(x, y, -1, 1);    //Diagonal test left down
-    reply += TestDirection(x, y, 1, -1);    //Diagonal test right up
-
-    //Return count of possible flippable disks around point(x,y)
-    return reply;
-}
-
-void Game::FlipDisks(const int x, const int y)
-{
-    int end_x, end_y;
-
-    end_x = x - TestDirection(x, y, -1, 0);
-    while (end_x != x) {
-        GameBoard[end_x++][y] = CurrentDiskColor;
-    }
-
-    end_x = x + TestDirection(x, y, 1, 0);
-    while (end_x != x) {
-        GameBoard[end_x--][y] = CurrentDiskColor;
-    }
-
-    end_y = y - TestDirection(x, y, 0, -1);
-    while (end_y != y) {
-        GameBoard[x][end_y++] = CurrentDiskColor;
-    }
-
-    end_y = y + TestDirection(x, y, 0, 1);
-    while (end_y != y) {
-        GameBoard[x][end_y--] = CurrentDiskColor;
-    }
-
-    end_x = x - TestDirection(x, y, -1, -1);
-    end_y = y - TestDirection(x, y, -1, -1);
-    while (end_x != x) {
-        GameBoard[end_x++][end_y++] = CurrentDiskColor;
-    }
-
-    end_x = x + TestDirection(x, y, 1, 1);
-    end_y = y + TestDirection(x, y, 1, 1);
-    while (end_y != y) {
-        GameBoard[end_x--][end_y--] = CurrentDiskColor;
-    }
-    end_x = x + TestDirection(x, y, 1, -1);
-    end_y = y - TestDirection(x, y, 1, -1);
-    while (end_x != x) {
-        GameBoard[end_x--][end_y++] = CurrentDiskColor;
-    }
-
-    end_x = x - TestDirection(x, y, -1, 1);
-    end_y = y + TestDirection(x, y, -1, 1);
-    while (end_y != y) {
-        GameBoard[end_x++][end_y--] = CurrentDiskColor;
-    }
-}
-*//*
-void Game::UpdateHintMask(void)
-{
-    int x, y;
-    std::cout << std::endl;
-    for(y = 0; y < boardTiles; ++y) {
-        for(x = 0; x < boardTiles; ++x) {
-            if(GameBoard[x][y] == White) {
-                //HintMask[x][y] = White;
-                std::cout << 'W';
-            } else if(GameBoard[x][y] == Black) {
-                //HintMask[x][y] = Black;
-                std::cout << 'B';
-            } else if(TestPosition(x, y) > 0) {
-                ++hintCount;
-                HintMask[x][y] = Hint;
-                std::cout << 'X';
-            } else {
-                HintMask[x][y] = Empty;
-                std::cout << 'O';
-            }
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-
-    if (hintCount == 0) // if hintCount = 0, switch player's turn
-    {
-        pass_turn = true;
-        ++passed_gameTurn_counter;
-        if(passed_gameTurn_counter == 2)
-        {
-            game_over = true;
-        }
-    }
-    else
-    {
-        passed_gameTurn_counter = 0;
-    }
-
-}
-*/
 void Game::update(/*Game object*/)
 {
     uint64_t ticksLast = SDL_GetPerformanceCounter();
@@ -753,25 +648,6 @@ void Game::update(/*Game object*/)
     SDL_GL_SwapWindow(window);
 }
 
-//bool Game::resetGame()
-//{
-//    if(reset_game)
-//    {
-//        reset_game = false;
-//        scoreWhite = 2;
-//        scoreBlack = 2;
-//        playerTurn = Black;
-//        if(GameStyle == ServerGame) {
-//            /*
-//             * Send message to other player if not local game
-//             * Update new gameboard to remote site
-//             */
-//        }
-//        return true;
-//    }
-//    return false;
-//}
-
 bool Game::resetGame()
 {
     if(bPlayer.reset_Game() || wPlayer.reset_Game())
@@ -780,25 +656,6 @@ bool Game::resetGame()
     }
     return false;
 }
-
-//bool Game::changeBoardsize()
-//{
-//   if(boardSizeChanged)
-//    {
-//        boardSizeChanged = false;
-//        scoreWhite = 2;
-//        scoreBlack = 2;
-//        playerTurn = Black;
-//        if(GameStyle == ServerGame) {
-//            /*
-//             * Send message to other player if not local game
-//             * Update new gameboard to remote site
-//             */
-//        }
-//        return true;
-//    }
-//    return false;
-//}
 
 bool Game::changeBoardsize()
 {
@@ -809,34 +666,6 @@ bool Game::changeBoardsize()
     return false;
 }
 
-/*bool Game::gameOver()
-{
-   if(bPlayer.game_Over() || wPlayer.game_Over())
-    {
-       // if(Play_more)
-       //reset_game = true;
-        // reset_game();
-       // scoreWhite = 2;
-        //scoreBlack = 2;
-        //else
-        // close game --- call main.cpp on if events
-
-        std::cout << "" << "GAME OVER!!" << "\n";
-        if(bPlayer.updateBlackScore() > wPlayer.updateWhiteScore())
-            std::cout << "Winner is Black!" << "\n";
-        else if(bPlayer.updateBlackScore() == wPlayer.updateWhiteScore())
-        {
-            std::cout << "Game is Draw, No winner!" << "\n";
-        }  
-        else
-        {
-            std::cout << "Winner is White!" << "\n";
-        }  
-        return true;
-    }
-    return false;
-}
-*/
 bool Game::gameOver()
 {
    if(bPlayer.game_Over() || wPlayer.game_Over())
@@ -891,12 +720,14 @@ void Game::clean()
     /*
      * Shut down possible client or server!
      */
+    #if (USE_NET == 1)
     if(GameStyle == ClientGame) {
         client.Client_Disconnect();
     }
     if(GameStyle == ServerGame) {
         server.Server_Stop();
     }
+    #endif
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui::DestroyContext();
@@ -904,35 +735,8 @@ void Game::clean()
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-/*
-void Game::updateScore()
-{
-    std::cout << "Black score: " << scoreBlack << "\n";
-    std::cout << "White score: " << scoreWhite << "\n";
-}
-*/
 
-/*
-void Game::updatePlayerTurn()
-{
-    if(pass_turn == true)
-    {   if(CurrentDiskColor == White)
-        {
-            playerTurn = Black;
-            CurrentDiskColor = Black;
-        }
-        else
-        {
-            playerTurn = White;
-            CurrentDiskColor = White;
-        }
-
-        pass_turn = false;
-    }
-
-}
-*/
-
+#if (USE_NET == 1)
 void Game::HandleRemoteMessages()
 {
     uint16_t flags = 0;
@@ -941,16 +745,22 @@ void Game::HandleRemoteMessages()
     int y = 0;
     bool new_msg = false;
 
-    //Messages from game master server
-    if(client.Client_recv(text, flags) == true) {
-        //We have receved new message from remote player
-        new_msg = true;
+    if(GameStyle == ClientGame) {
+        //Messages from game master server
+        if(client.Client_recv(text, flags) == true) {
+            //We have receved new message from remote player
+            new_msg = true;
+        }
     }
-    //Messages from remote player, which is client
-    if(server.Server_recv(text, flags) == true) {
-        //We have receved new message from remote player
-        new_msg = true;
+
+    if(GameStyle == ServerGame) {
+        //Messages from remote player, which is client
+        if(server.Server_recv(text, flags) == true) {
+            //We have receved new message from remote player
+            new_msg = true;
+        }
     }
+
     if(new_msg == false)
         return;
 
@@ -1079,6 +889,7 @@ void Game::HandleRemoteMessages()
 
     if((flags & CHAT_TEXT) > 0) {
         //Where we print chat-text?
+        Game::AddChatText(text);
         #if (USE_DEBUG == 1)
         std::cout << "Chat [" << text << "]." << std::endl;
         #endif
@@ -1096,6 +907,7 @@ void Game::HandleRemoteMessages()
 
     if((flags & HUMAN_SOMETHING) > 0) {
         //For future use of human players message
+        Game::AddChatText(text);
         #if (USE_DEBUG == 1)
         std::cout << "Messagetype HUMAN_SOMETHING, text:" << text << std::endl;
         #endif
@@ -1104,6 +916,7 @@ void Game::HandleRemoteMessages()
 
     if((flags & AI_SOMETHING) > 0) {
         //For future use of AI players message
+        Game::AddChatText(text);
         #if (USE_DEBUG == 1)
         std::cout << "Messagetype AI_SOMETHING, text:" << text << std::endl;
         #endif
@@ -1153,7 +966,16 @@ int Game::ParseMoveString(const str text, int& x, int& y)
 
     return 0;
 }
+#endif
 
+void Game::AddChatText(const std::string txt)
+{
+    if(ChatBuff.size() >= MAX_CHAT_LINES) {
+        ChatBuff.erase(ChatBuff.begin());
+    }
+    ChatBuff.emplace_back(txt);
+    std::cout << "Chat add: " << txt << std::endl;
+}
 
 #if (USE_DEBUG == 1)
 void dbMessage(const std::string &s, bool crlf)

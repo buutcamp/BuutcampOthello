@@ -9,19 +9,27 @@
 #include "definet.h"
 #include <vector>
 #include <iostream>
+#if (USE_NET == 1)
 #include "client.h"
 #include "server.h"
+#endif
 #include "othello.h"
+#if (USE_AI == 1)
 #include "board.h"
+#endif
 
 class Game;
 
 class Player {
     //class Game* game;
     friend class Game;
+    #if (USE_AI == 1)
     friend class OthelloBoard;
+    #endif
+    #if (USE_NET == 1)
     class Client* client;
     class Server* server;
+    #endif
 
     public:
         Player(/*parameters*/);

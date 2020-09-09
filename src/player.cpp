@@ -10,7 +10,9 @@
 extern std::string txt;
 #endif
 
+#if (USE_AI == 1)
 OthelloBoard board;
+#endif
 
 Player::Player(/*parametres*/):
             PlayerType(-1),         //Must change in GUI
@@ -49,7 +51,6 @@ void Player::updatePlayerTurn()
         }
         pass_turn = false;
     }
-
 }
 
 void Player::OnResetButtonClicked()
@@ -70,6 +71,7 @@ void Player::onGameOver()
 
 bool Player::applyAI(int x, int y)
 {
+    #if (USE_AI == 1)
     ai player_algorithm;
     //OthelloBoard board;
 
@@ -80,6 +82,7 @@ bool Player::applyAI(int x, int y)
 
     if (disc_position ==  x_y_in_1D)
         return true;
+    #endif
 
     return false;
 }
@@ -169,7 +172,7 @@ void Player::OnTileClicked(int x, int y)
     dbMessage(txt, true);
     #endif
 
-    str txt;
+    std::string txt;
     uint16_t flags;
     //int discs_counter = 4; // total number of discs placed on the board
     //Game mask update
@@ -212,6 +215,7 @@ void Player::OnTileClicked(int x, int y)
             //Make message from click position
             txt = std::to_string(x) + "," + std::to_string(y);
 
+            #if (USE_NET == 1)
             if(gameStyle == ClientGame) {
                 #if (USE_DEBUG == 1)
                 std::cout << "Clients move:" << txt << std::endl;
@@ -224,6 +228,7 @@ void Player::OnTileClicked(int x, int y)
                 #endif
                 server->Server_send(txt, flags);
             }
+            #endif
 
             if(gameStyle == LocalGame) {
                 //Local game

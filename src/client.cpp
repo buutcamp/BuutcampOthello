@@ -30,28 +30,9 @@ Client::Client()
     Cl_ServerSocket = 0;
     Cl_ServerPort = PORT;
 
-    //memset(Cl_buffer, 0, sizeof(Cl_buffer));
-    //Test start
-    //cMsg temp;
-    //temp.id = 1354;
-    //temp.cMessage = "Hello world!";
-    //temp.status = 666;
-    //
-    //std::cout << "   ID: " << temp.id << std::endl;
-    //std::cout << "  Msg: " << temp.cMessage << std::endl;
-    //std::cout << "Flags: " << temp.status << std::endl;
-    //memcpy(Cl_buffer, (const unsigned char*)&temp, cMsg_size);
-    //temp = {};
-    //
-    //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
-    //memcpy(&temp, Cl_buffer, cMsg_size);
-    //std::cout << "   ID: " << temp.id << std::endl;
-    //std::cout << "  Msg: " << temp.cMessage << std::endl;
-    //std::cout << "Flags: " << temp.status << std::endl;
-    //Test end
-
     memset(Cl_buffer, 0, sizeof(Cl_buffer));
     Cl_isConnected = false;
+    std::cout << "Client initialized." << std::endl;
 }
 
 Client::~Client()
@@ -93,9 +74,7 @@ int Client::Client_Connect()
     } else {
         ClStatus &= ~(ERR_CONNECTING);
         Cl_isConnected = true;
-        //std::thread Cl_srv(Client_Serving, 60000);
         std::cout << "Client connected to server." << std::endl;
-        //Cl_srv = std::thread(&Client::Client_Serving, this);
         return 0;
     }
 }
@@ -132,8 +111,8 @@ bool Client::Client_recv(str& text, uint16_t& flags)
         std::cout << "Client got new message [" << Cl_MessagesIn[0].cMessage <<
             "] flags:" << Cl_MessagesIn[0].status <<
             "ID:" << Cl_MessagesIn[0].id << std::endl;
-        //Remove oldest in FIFO
 
+        //Remove oldest in FIFO
         Cl_MessagesIn.erase(Cl_MessagesIn.begin());
         return true;
     }
@@ -154,7 +133,6 @@ void Client::Client_Serving()
         if(Cl_ValRead < 0) {
             std::cout << "Error reading socket!" << std::endl;
         } else {
-            //std::copy(&temp, &temp + 1, reinterpret_cast<cMsg*>(Cl_buffer));
             memcpy(&temp, Cl_buffer, cMsg_size);
             Cl_MessagesIn.push_back(temp);
         }

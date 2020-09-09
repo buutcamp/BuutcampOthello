@@ -79,7 +79,7 @@ int ai::discDifference(OthelloBoard &board, int &color) {
 //4
 // Number of possible moves
 int ai::mobility(OthelloBoard &board, int &color) {
-    int x = 0, y = 0;
+    //int x = 0, y = 0;
     std::list<int> flippedDiscs;
     //
     board.findLegalMoves(AI_BLACK, &pMoves);

@@ -22,25 +22,28 @@
 #include <algorithm>
 #include <unordered_map>
 #include "definet.h"
+#if (USE_NET == 1)
 #include "client.h"     //class Client
 #include "server.h"     //class Server
+#endif
 #include "player.h"     //class Player
+#if (USE_AI == 1)
 #include "ai.h"
 #include "board.h"
+#endif
 
 /*
  * class Game
  */
-
-//class Player;
-
 class Game {
+    #if (USE_NET == 1)
     friend class Server;
     friend class Client;
-    //Player wPlayer;
-    //Player bPlayer;
+    #endif
+    #if (USE_AI == 1)
     ai AI;
     OthelloBoard board;
+    #endif
     friend class Player;
 
     public:
@@ -61,11 +64,13 @@ class Game {
         bool OthelloButton(int x, int y);
         bool gameRunning();
         bool LocalLock;
+        void AddChatText(const std::string txt);
 
     private:
         const int diskRadius;
         const int tileSize;
         const int GameStyle;
+        std::vector<std::string> ChatBuff;
 
         int boardTiles;
         std::vector<std::vector<int>> GameBoard;
@@ -84,14 +89,14 @@ class Game {
         bool isRunning;
         bool showHint;
         bool game_over;
+        #if (USE_NET == 1)
         void HandleRemoteMessages();
         int ParseMoveString(const str text, int& x, int& y);
+        #endif
         float SizeMod;
 
         SDL_Window* window;
         SDL_GLContext gl_context;
-        //Player bPlayer;
-        //Player wPlayer;
 };
 
 

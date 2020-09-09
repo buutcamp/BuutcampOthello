@@ -7,6 +7,11 @@
 #ifndef _DEFINET_H_
 #define _DEFINET_H_
 
+#define USE_DEBUG               0       //1 = In use, 0 = Not used
+#define USE_NET                 0       //1 = Use clien & server, 0 = Just local game
+#define USE_AI                  0       //1 = AI & human players, 0 = Just human players
+
+
 //enum pcs {Empty, White, Black, Hint};
 enum player {Human_Local, Human_Remote, AI_Local, AI_Remote};
 enum game_style {LocalGame, ClientGame, ServerGame};
@@ -17,7 +22,6 @@ enum Tiles_AI {AI_EMPTY = 0, AI_WHITE = -1, AI_BLACK = 1};
 #define WIDTH                   1000     // Window width
 #define HEIGHT                  900     // Window height
 #define BOARD_TILES             8       // Number of tiles in a row/column
-#define USE_DEBUG               0       //1 = In use, 0 = Not used
 
 
 //Communication settings

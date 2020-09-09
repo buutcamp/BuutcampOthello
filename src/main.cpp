@@ -9,14 +9,17 @@
 #include "main.h"
 #include "othello.h"
 
+#if (USE_NET == 1)
 std::vector<std::string> PrgParams;
 int ParseParameter(str param_text);
+#endif
 
 int main(int argc, char* argv[])
 {
     int game_type = LocalGame;
     bool parameter_error = false;
 
+    #if (USE_NET == 1)
     for (int i = 0; i < argc; ++i)
         PrgParams.push_back(argv[i]);
 
@@ -43,6 +46,7 @@ int main(int argc, char* argv[])
     if(parameter_error == true) {
         return 0;
     }
+    #endif
 
     Game game(BLACK, game_type);
 
@@ -66,9 +70,12 @@ int main(int argc, char* argv[])
 
 }
 
+#if (USE_NET == 1)
 int ParseParameter(str param_text)
 {
     if(param_text == PrgParams[0])
         return 0;
+    //Tests for address and port, or use defaults in definet.h
     return -1;
 }
+#endif

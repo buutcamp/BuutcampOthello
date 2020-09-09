@@ -51,47 +51,51 @@ int Server::Server_Start(const int port)
     std::cout << "Start server." << std::endl;
     if((Srv_ServerSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         SrvStatus |= ERR_CREATE_SOCKET;
-        #if (USE_DEBUG == 1)
-        dbMessage("Can't create Server socket!", true);
-        #endif
+        std::cout << "Can't create Server socket!" << std::endl;
         return Srv_ServerSocket;
     } else if(setsockopt(Srv_ServerSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &Srv_SocketOptions, sizeof(Srv_SocketOptions))) {
         SrvStatus |= ERR_SOCKET_OPTIONS;
-        #if (USE_DEBUG == 1)
-        dbMessage("Server socket options error!", true);
-        #endif
+        std::cout << "Server: Socket options error!" << std::endl;
         return -1;
     }
 
+    memset(&Srv_Server_addr, 0, sizeof(Srv_Server_addr));
     Srv_Server_addr.sin_family = AF_INET;
-    Srv_Server_addr.sin_addr.s_addr = INADDR_ANY;
-    Srv_Server_addr.sin_port = Srv_ServerPort;
+    Srv_Server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    Srv_Server_addr.sin_port = htons(Srv_ServerPort);
 
     Srv_ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (Srv_ServerSocket < 0) {
         SrvStatus |= ERR_OPEN_SOCKET;
         //Error opening socket
+        std::cout << "Server: Error opening socket!" << std::endl;
         return Srv_ServerSocket;
     }
     std::cout << "Server socket:" << Srv_ServerSocket << std::endl;
     SrvStatus &= ~(ERR_OPEN_SOCKET);
 
-    explicit_bzero((char *) &Srv_Server_addr, sizeof(Srv_Server_addr));
+    //explicit_bzero((char *) &Srv_Server_addr, sizeof(Srv_Server_addr));
     Srv_ServerPort = port;
 
     // Forcefully attaching socket to the port 8080
+    std::cout << "Server: binding..." << std::endl;
     if (bind(Srv_ServerSocket, (struct sockaddr *)&Srv_Server_addr, sizeof(Srv_Server_addr)) < 0) {
         SrvStatus |= ERR_BINDING;
+        std::cout << "Server: Error binding socket!" << std::endl;
         return -1;
     }
 
+    std::cout << "Server: listening..." << std::endl;
     if (listen(Srv_ServerSocket, 3) < 0) {
         SrvStatus |= ERR_LISTEN;
+        std::cout << "Server: Error listening socket!" << std::endl;
         return -1;
     }
 
+    std::cout << "Server: accepting..." << std::endl;
     if ((Srv_ClientSocket = accept(Srv_ServerSocket, (struct sockaddr *)&Srv_Server_addr, (socklen_t*)&Srv_addrlen)) < 0) {
         SrvStatus |= ERR_ACCEPTING;
+        std::cout << "Server: Error accepting socket!" << std::endl;
         return -1;
     }
 
@@ -151,7 +155,6 @@ void Server::Server_Serving()
         if(Srv_ValRead < 0) {
             std::cout << "Error reading socket!" << std::endl;
         } else {
-            //std::copy(&temp, &temp + 1, reinterpret_cast<sMsg*>(Srv_buffer));
             memcpy(&temp, Srv_buffer, sMsg_size);
             Srv_MessagesIn.push_back(temp);
         }
